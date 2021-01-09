@@ -13,7 +13,6 @@ const playVolumeName = "playvol"
 
 type playVolume struct {
 	*fs.File
-	stat stat.Stat
 }
 
 func newPlayVolume() *playVolume {
@@ -27,18 +26,10 @@ func newPlayVolume() *playVolume {
 		Name:   playVolumeName,
 	}
 
-	return &playVolume{File: fs.NewFile(s, nil), stat: s}
+	return &playVolume{File: fs.NewFile(s, nil)}
 }
 
 func (v *playVolume) Open() error {
 	v.ReadSeeker = bytes.NewReader([]byte("volume 100"))
 	return nil
-}
-
-func (v *playVolume) Stat() stat.Stat {
-	return v.stat
-}
-
-func (v *playVolume) Qid() qid.Qid {
-	return v.Stat().Qid
 }
