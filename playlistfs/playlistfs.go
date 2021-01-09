@@ -1,6 +1,7 @@
-package main
+package playlistfs
 
 import (
+	"github.com/nmeum/mpvfs/fileserver"
 	"go.rbn.im/neinp/fs"
 	"go.rbn.im/neinp/qid"
 	"go.rbn.im/neinp/stat"
@@ -8,7 +9,7 @@ import (
 	"time"
 )
 
-func NewPlaylistFS() *FileServer {
+func NewPlaylistFS() *fileserver.FileServer {
 	q := qid.Qid{Type: qid.TypeDir, Version: 0, Path: hashPath("/")}
 	s := stat.Stat{
 		Qid:    q,
@@ -24,5 +25,5 @@ func NewPlaylistFS() *FileServer {
 	}
 
 	dir := fs.NewDir(s, children)
-	return NewFileServer(dir)
+	return fileserver.NewFileServer(dir)
 }

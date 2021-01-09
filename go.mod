@@ -1,4 +1,4 @@
-module github.com/nmeum/playlistfs
+module github.com/nmeum/mpvfs
 
 go 1.15
 

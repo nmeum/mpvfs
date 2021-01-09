@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/nmeum/mpvfs/playlistfs"
 	"go.rbn.im/neinp"
 
 	"flag"
@@ -21,7 +22,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fs := NewPlaylistFS()
+	fs := playlistfs.NewPlaylistFS()
 	for {
 		conn, err := listener.Accept()
 		if err != nil {

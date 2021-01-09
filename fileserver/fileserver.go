@@ -1,4 +1,4 @@
-package main
+package fileserver
 
 import (
 	"go.rbn.im/neinp"

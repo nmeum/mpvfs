@@ -1,4 +1,4 @@
-package main
+package playlistfs
 
 import (
 	"hash/fnv"
