@@ -53,7 +53,7 @@ func (f *FileServer) Walk(ctx context.Context, msg message.TWalk) (message.RWalk
 		return message.RWalk{}, errors.New(message.UnknownFidErrorString)
 	}
 	stat := entry.Stat()
-	if !stat.IsDir() {
+	if !stat.IsDir() && len(msg.Wname) != 0 {
 		return message.RWalk{}, errors.New(message.WalkNoDirErrorString)
 	}
 
