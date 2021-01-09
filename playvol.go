@@ -27,7 +27,7 @@ func newPlayVolume() *playVolume {
 		Name:   playVolumeName,
 	}
 
-	return &playVolume{stat: s}
+	return &playVolume{File: fs.NewFile(s, nil), stat: s}
 }
 
 func (v *playVolume) Open() error {
