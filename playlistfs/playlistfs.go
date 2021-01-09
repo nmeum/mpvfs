@@ -23,6 +23,7 @@ func NewPlaylistFS() *fileserver.FileServer {
 	children := []fs.Entry{
 		newPlayVolume(),
 		newPlayControl(),
+		newPlaylist(),
 	}
 
 	dir := fs.NewDir(s, children)
