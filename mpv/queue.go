@@ -2,7 +2,6 @@ package mpv
 
 import (
 	"sync"
-	"fmt"
 )
 
 type queue struct {
@@ -34,9 +33,7 @@ func (q *queue) getChan(id msgID) chan response {
 
 func (q *queue) Wait(id msgID) response {
 	ch := q.getChan(id)
-	fmt.Println("blocking reading", id)
 	response := <-ch
-	fmt.Println("unblock reading", id)
 
 	close(ch)
 	q.lock.Lock()
@@ -48,7 +45,5 @@ func (q *queue) Wait(id msgID) response {
 
 func (q *queue) Signal(r response) {
 	ch := q.getChan(r.ID)
-	fmt.Println("blocking sending", r.ID)
 	ch <- r
-	fmt.Println("unblocked sending", r.ID)
 }
