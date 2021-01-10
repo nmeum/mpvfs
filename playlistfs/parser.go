@@ -19,7 +19,7 @@ const (
 
 type Command struct {
 	Name string
-	Arg  int
+	Arg  uint
 }
 
 func ParseCtlCmd(buf []byte) (*Command, error) {
@@ -39,11 +39,11 @@ func ParseCtlCmd(buf []byte) (*Command, error) {
 		case posName:
 			cmd.Name = data
 		case posArg:
-			var err error
-			cmd.Arg, err = strconv.Atoi(data)
+			arg, err := strconv.ParseUint(data, 10, 32)
 			if err != nil {
 				return nil, err
 			}
+			cmd.Arg = uint(arg)
 		}
 	}
 
