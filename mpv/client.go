@@ -86,8 +86,8 @@ func (c *Client) newReq(name interface{}, args ...interface{}) *request {
 }
 
 func (c *Client) ExecCmd(name string, args ...interface{}) (interface{}, error) {
-	cmd := c.newReq(name, args...)
-	err := cmd.Encode(c.conn)
+	req := c.newReq(name, args...)
+	err := req.Encode(c.conn)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +98,7 @@ func (c *Client) ExecCmd(name string, args ...interface{}) (interface{}, error) 
 		return nil, err
 	}
 
-	response := c.mq.Wait(cmd.ID)
+	response := c.mq.Wait(req.ID)
 	if response.Error != noError {
 		return nil, errors.New(response.Error)
 	}
