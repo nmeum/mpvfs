@@ -32,7 +32,11 @@ func startServer(mpvClient *mpv.Client) {
 		log.Fatal(err)
 	}
 
-	state := newPlayerState(mpvClient)
+	state, err := newPlayerState(mpvClient)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	config := playlistfs.Config{
 		playctl{state, mpvClient},
 		ControlFile{"playlist"},

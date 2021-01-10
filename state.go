@@ -19,10 +19,14 @@ type playerState struct {
 	status playback
 }
 
-func newPlayerState(mpv *mpv.Client) *playerState {
+func newPlayerState(mpv *mpv.Client) (*playerState, error) {
 	state := &playerState{mpv: mpv, mtx: new(sync.Mutex)}
 
-	pause := mpv.ObserveProperty("pause")
+	pause, err := mpv.ObserveProperty("pause")
+	if err != nil {
+		return nil, err
+	}
+
 	go func(ch <-chan interface{}) {
 		isPaused := (<-ch).(bool)
 
@@ -35,7 +39,7 @@ func newPlayerState(mpv *mpv.Client) *playerState {
 		state.mtx.Unlock()
 	}(pause)
 
-	return state
+	return state, nil
 }
 
 func (p *playerState) IsPaused() bool {

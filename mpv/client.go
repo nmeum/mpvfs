@@ -139,16 +139,22 @@ func (c *Client) GetProperty(name string) (interface{}, error) {
 	return value, nil
 }
 
-func (c *Client) ObserveProperty(name string) <-chan interface{} {
+// TODO: Allow multiple observers of same property
+func (c *Client) ObserveProperty(name string) (<-chan interface{}, error) {
 	c.propMtx.Lock()
 	ch, ok := c.propChans[name]
 	if ok {
-		return ch
+		return nil, errors.New("property already observed")
 	}
 
 	ch = make(chan interface{})
 	c.propChans[name] = ch
+
+	_, err := c.ExecCmd("observe_property", 1, name)
+	if err != nil {
+		delete(c.propChans, name)
+	}
 	c.propMtx.Unlock()
 
-	return ch
+	return ch, nil
 }
