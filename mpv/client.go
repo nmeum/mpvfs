@@ -6,13 +6,15 @@ import (
 	"fmt"
 	"math"
 	"net"
+	"errors"
 )
 
 type Client struct {
 	id msgID
+	mq queue
 
 	conn    net.Conn
-	msgChan chan message
+	msgChan chan response
 }
 
 func NewClient(path string) (*Client, error) {
@@ -22,9 +24,10 @@ func NewClient(path string) (*Client, error) {
 	}
 
 	c := &Client{
-		conn:    conn,
 		id:      math.MinInt32,
-		msgChan: make(chan message),
+		mq:      newQueue(),
+		conn:    conn,
+		msgChan: make(chan response),
 	}
 
 	go c.recvLoop(c.msgChan)
@@ -33,13 +36,13 @@ func NewClient(path string) (*Client, error) {
 	return c, nil
 }
 
-func (c *Client) recvLoop(ch chan<- message) {
+func (c *Client) recvLoop(ch chan<- response) {
 	scanner := bufio.NewScanner(c.conn)
 	for scanner.Scan() {
 		data := scanner.Bytes()
 		fmt.Println("data:", string(data))
 
-		var msg message
+		var msg response
 		err := json.Unmarshal(data, &msg)
 		if err != nil {
 			panic(err) // XXX
@@ -54,14 +57,10 @@ func (c *Client) recvLoop(ch chan<- message) {
 	}
 }
 
-func (c *Client) dispatchLoop(ch <-chan message) {
+func (c *Client) dispatchLoop(ch <-chan response) {
 	for {
 		msg := <-ch
-		if msg.isResponse() {
-			fmt.Println("got response")
-		} else {
-			fmt.Println("unknown response")
-		}
+		c.mq.Signal(msg)
 	}
 }
 
@@ -80,19 +79,23 @@ func (c *Client) newCmd(name string, args ...string) *command {
 	return &command{Cmd: argv, ID: c.nextID()}
 }
 
-func (c *Client) ExecCmd(name string, args ...string) error {
+func (c *Client) ExecCmd(name string, args ...string) (interface{}, error) {
 	cmd := c.newCmd(name, args...)
 	err := cmd.Encode(c.conn)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Every message must be terminated with \n.
 	_, err = c.conn.Write([]byte("\n"))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	// TODO
-	return nil
+	response := c.mq.Wait(cmd.ID)
+	if response.Error != "success" {
+		return nil, errors.New(response.Error)
+	}
+
+	return response.Data, nil
 }
