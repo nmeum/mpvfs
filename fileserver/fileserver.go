@@ -32,6 +32,9 @@ type FileServer struct {
 
 const version = "9P2000"
 
+// TODO: Currently only supports a flat hierarchy with one root
+// directory and several regular files located inside this directory.
+
 func NewFileServer(files FileMap) *FileServer {
 	fs := &FileServer{files: make(map[string]*pair), fids: fid.New()}
 
