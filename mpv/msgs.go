@@ -14,8 +14,8 @@ type response struct {
 }
 
 type request struct {
-	Cmd []string `json:"command"`
-	ID  msgID    `json:"request_id"`
+	Cmd []interface{} `json:"command"`
+	ID  msgID         `json:"request_id"`
 }
 
 func (r *request) Encode(w io.Writer) error {

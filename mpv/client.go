@@ -3,10 +3,10 @@ package mpv
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"net"
-	"errors"
 )
 
 type Client struct {
@@ -74,12 +74,12 @@ func (c *Client) nextID() msgID {
 	return c.id
 }
 
-func (c *Client) newReq(name string, args ...string) *request {
-	argv := append([]string{name}, args...)
+func (c *Client) newReq(name interface{}, args ...interface{}) *request {
+	argv := append([]interface{}{name}, args...)
 	return &request{Cmd: argv, ID: c.nextID()}
 }
 
-func (c *Client) ExecCmd(name string, args ...string) (interface{}, error) {
+func (c *Client) ExecCmd(name string, args ...interface{}) (interface{}, error) {
 	cmd := c.newReq(name, args...)
 	err := cmd.Encode(c.conn)
 	if err != nil {
