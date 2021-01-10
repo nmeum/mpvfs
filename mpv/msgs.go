@@ -5,6 +5,8 @@ import (
 	"io"
 )
 
+const noError = "success"
+
 type msgID int32
 
 type response struct {

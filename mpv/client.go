@@ -93,7 +93,7 @@ func (c *Client) ExecCmd(name string, args ...interface{}) (interface{}, error) 
 	}
 
 	response := c.mq.Wait(cmd.ID)
-	if response.Error != "success" {
+	if response.Error != noError {
 		return nil, errors.New(response.Error)
 	}
 
