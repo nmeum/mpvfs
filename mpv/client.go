@@ -99,3 +99,8 @@ func (c *Client) ExecCmd(name string, args ...interface{}) (interface{}, error) 
 
 	return response.Data, nil
 }
+
+func (c *Client) SetProperty(name string, value interface{}) error {
+	_, err := c.ExecCmd("set_property", name, value)
+	return err
+}
