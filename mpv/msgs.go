@@ -13,6 +13,10 @@ type response struct {
 	Error string      `json:"error"`
 	Data  interface{} `json:"data"`
 	ID    msgID       `json:"request_id"`
+
+	// Additional fields used by observe events
+	Event        string `json:"event"`
+	PropertyName string `json:"name"`
 }
 
 type request struct {

@@ -7,11 +7,15 @@ import (
 	"fmt"
 	"math"
 	"net"
+	"sync"
 )
 
 type Client struct {
 	id msgID
 	mq queue
+
+	propMtx   *sync.Mutex
+	propChans map[string]chan interface{}
 
 	conn    net.Conn
 	msgChan chan response
@@ -26,10 +30,12 @@ func NewClient(path string) (*Client, error) {
 	}
 
 	c := &Client{
-		id:      math.MinInt32,
-		mq:      newQueue(),
-		conn:    conn,
-		msgChan: make(chan response),
+		id:        math.MinInt32,
+		mq:        newQueue(),
+		propMtx:   new(sync.Mutex),
+		propChans: make(map[string]chan interface{}),
+		conn:      conn,
+		msgChan:   make(chan response),
 	}
 
 	errChan := make(chan error)
@@ -66,8 +72,21 @@ func (c *Client) recvLoop(ch chan<- response, errCh chan<- error) {
 func (c *Client) dispatchLoop(ch <-chan response) {
 	for {
 		msg := <-ch
-		c.mq.Signal(msg)
+		if msg.Event == "property-change" {
+			c.handleChange(msg)
+		} else {
+			c.mq.Signal(msg)
+		}
 	}
+}
+
+func (c *Client) handleChange(msg response) {
+	c.propMtx.Lock()
+	ch, ok := c.propChans[msg.PropertyName]
+	if ok {
+		ch <- msg.Data
+	}
+	c.propMtx.Unlock()
 }
 
 func (c *Client) nextID() msgID {
@@ -118,4 +137,18 @@ func (c *Client) GetProperty(name string) (interface{}, error) {
 	}
 
 	return value, nil
+}
+
+func (c *Client) ObserveProperty(name string) <-chan interface{} {
+	c.propMtx.Lock()
+	ch, ok := c.propChans[name]
+	if ok {
+		return ch
+	}
+
+	ch = make(chan interface{})
+	c.propChans[name] = ch
+	c.propMtx.Unlock()
+
+	return ch
 }
