@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"fmt"
 	"strconv"
 )
 
@@ -53,4 +54,8 @@ func ParseCtlCmd(buf []byte) (*Command, error) {
 	}
 
 	return &cmd, nil
+}
+
+func (c *Command) String() string {
+	return fmt.Sprintf("cmd %s %d", c.Name, c.Arg)
 }
