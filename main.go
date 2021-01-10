@@ -69,6 +69,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	go func(ch <-chan error) {
+		err := <-ch
+		log.Println(err)
+	}(mpvClient.ErrChan)
 
 	startServer(mpvClient)
 }

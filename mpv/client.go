@@ -15,6 +15,8 @@ type Client struct {
 
 	conn    net.Conn
 	msgChan chan response
+
+	ErrChan <-chan error
 }
 
 func NewClient(path string) (*Client, error) {
@@ -30,13 +32,16 @@ func NewClient(path string) (*Client, error) {
 		msgChan: make(chan response),
 	}
 
-	go c.recvLoop(c.msgChan)
+	errChan := make(chan error)
+	c.ErrChan = errChan
+
+	go c.recvLoop(c.msgChan, errChan)
 	go c.dispatchLoop(c.msgChan)
 
 	return c, nil
 }
 
-func (c *Client) recvLoop(ch chan<- response) {
+func (c *Client) recvLoop(ch chan<- response, errCh chan<- error) {
 	scanner := bufio.NewScanner(c.conn)
 	for scanner.Scan() {
 		data := scanner.Bytes()
@@ -45,7 +50,8 @@ func (c *Client) recvLoop(ch chan<- response) {
 		var msg response
 		err := json.Unmarshal(data, &msg)
 		if err != nil {
-			panic(err) // XXX
+			errCh <- err
+			continue
 		}
 
 		ch <- msg
@@ -53,7 +59,7 @@ func (c *Client) recvLoop(ch chan<- response) {
 
 	err := scanner.Err()
 	if err != nil {
-		panic(err) // XXX
+		errCh <- err
 	}
 }
 
