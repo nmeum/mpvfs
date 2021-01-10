@@ -14,7 +14,7 @@ import (
 
 type File interface {
 	Read(int64, []byte) (int, error)
-	Write([]byte) (int, error)
+	Write(int64, []byte) (int, error)
 }
 
 type FileMap map[string]File
@@ -131,6 +131,20 @@ func (f *FileServer) Read(ctx context.Context, msg message.TRead) (message.RRead
 	}
 
 	return message.RRead{Count: uint32(n), Data: buf[:n]}, nil
+}
+
+func (f *FileServer) Write(ctx context.Context, msg message.TWrite) (message.RWrite, error) {
+	pair, ok := f.fids.Get(msg.Fid).(*pair)
+	if !ok {
+		return message.RWrite{}, errors.New(message.UnknownFidErrorString)
+	}
+
+	n, err := pair.file.Write(int64(msg.Offset), msg.Data)
+	if err != nil {
+		return message.RWrite{}, err
+	}
+
+	return message.RWrite{Count: uint32(n)}, nil
 }
 
 func (f *FileServer) Clunk(ctx context.Context, msg message.TClunk) (message.RClunk, error) {

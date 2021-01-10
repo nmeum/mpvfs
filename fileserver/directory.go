@@ -23,6 +23,6 @@ func (d directory) Read(off int64, p []byte) (int, error) {
 	return reader.Read(p)
 }
 
-func (d directory) Write(p []byte) (int, error) {
+func (d directory) Write(off int64, p []byte) (int, error) {
 	return 0, os.ErrInvalid
 }

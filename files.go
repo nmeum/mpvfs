@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 )
 
 type ControlFile struct {
@@ -13,7 +14,7 @@ func (c ControlFile) Read(int64, []byte) (int, error) {
 	return 0, nil
 }
 
-func (c ControlFile) Write([]byte) (int, error) {
+func (c ControlFile) Write(int64, []byte) (int, error) {
 	fmt.Println("Writing", c.Name)
-	return 0, nil
+	return 0, os.ErrInvalid
 }
