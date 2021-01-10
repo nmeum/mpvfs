@@ -23,7 +23,10 @@ func (c playctl) Write(off int64, p []byte) (int, error) {
 	case "stop":
 		panic("not implemented")
 	case "pause":
-		panic("not implemented")
+		err := c.mpv.SetProperty("pause", true)
+		if err != nil {
+			return 0, err
+		}
 	case "play":
 		err := c.mpv.SetProperty("pause", false)
 		if err != nil {
