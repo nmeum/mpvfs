@@ -22,7 +22,13 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fs := playlistfs.NewPlaylistFS()
+	config := playlistfs.Config{
+		ControlFile{"playctl"},
+		ControlFile{"playlist"},
+		ControlFile{"playvol"},
+	}
+
+	fs := playlistfs.NewPlaylistFS(config)
 	for {
 		conn, err := listener.Accept()
 		if err != nil {

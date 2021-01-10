@@ -1,4 +1,4 @@
-package playlistfs
+package fileserver
 
 import (
 	"go.rbn.im/neinp/qid"
@@ -11,7 +11,14 @@ import (
 func createStat(name string, mode stat.Mode) stat.Stat {
 	now := time.Now()
 
-	q := qid.Qid{Type: qid.TypeDir, Version: 0, Path: hashPath(name)}
+	var qtype qid.Type
+	if mode&stat.Dir != 0 {
+		qtype = qid.TypeDir
+	} else {
+		qtype = qid.TypeFile
+	}
+
+	q := qid.Qid{Type: qtype, Version: 0, Path: hashPath(name)}
 	s := stat.Stat{
 		Qid:    q,
 		Mode:   mode,
