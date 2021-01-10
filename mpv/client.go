@@ -77,12 +77,13 @@ func (c *Client) nextID() msgID {
 	return c.id
 }
 
-func (c *Client) newCmd(args []string) *command {
-	return &command{Cmd: args, ID: c.nextID()}
+func (c *Client) newCmd(name string, args ...string) *command {
+	argv := append([]string{name}, args...)
+	return &command{Cmd: argv, ID: c.nextID()}
 }
 
 func (c *Client) ExecCmd(name string, args ...string) error {
-	cmd := c.newCmd(append([]string{name}, args...))
+	cmd := c.newCmd(name, args...)
 	err := cmd.Encode(c.conn)
 	if err != nil {
 		return err
