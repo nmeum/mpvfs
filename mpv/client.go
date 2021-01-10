@@ -57,10 +57,8 @@ func (c *Client) recvLoop(ch chan<- message) {
 func (c *Client) dispatchLoop(ch <-chan message) {
 	for {
 		msg := <-ch
-		if len(msg.Error) != 0 {
-			fmt.Println("got response", msg.Error)
-		} else if len(msg.Cmd) != 0 {
-			fmt.Println("got command")
+		if msg.isResponse() {
+			fmt.Println("got response")
 		} else {
 			fmt.Println("unknown response")
 		}

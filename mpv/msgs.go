@@ -12,6 +12,14 @@ type message struct {
 	response
 }
 
+func (m message) isCommand() bool {
+	return len(m.Cmd) != 0
+}
+
+func (m message) isResponse() bool {
+	return len(m.Error) != 0
+}
+
 type response struct {
 	Error string      `json:"error"`
 	Data  interface{} `json:"data"`
