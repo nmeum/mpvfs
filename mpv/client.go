@@ -110,3 +110,12 @@ func (c *Client) SetProperty(name string, value interface{}) error {
 	_, err := c.ExecCmd("set_property", name, value)
 	return err
 }
+
+func (c *Client) GetProperty(name string) (interface{}, error) {
+	value, err := c.ExecCmd("get_property", name)
+	if err != nil {
+		return nil, err
+	}
+
+	return value, nil
+}
