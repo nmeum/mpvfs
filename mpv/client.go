@@ -104,6 +104,7 @@ func (c *Client) handleChange(msg response) {
 }
 
 func (c *Client) nextID() msgID {
+	// XXX: Mutex needed here?
 	if c.id == math.MaxInt32 {
 		c.id = math.MinInt32
 	} else {
@@ -173,7 +174,7 @@ func (c *Client) ObserveProperty(name string) (<-chan interface{}, error) {
 	c.propChans[name] = ch
 
 	// TODO: Figure out how observe_property IDs are supposed to work
-	_, err := c.ExecCmd("observe_property", 1, name)
+	_, err := c.ExecCmd("observe_property", c.nextID(), name)
 	if err != nil {
 		delete(c.propChans, name)
 	}
