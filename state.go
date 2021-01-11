@@ -28,15 +28,18 @@ func newPlayerState(mpv *mpv.Client) (*playerState, error) {
 	}
 
 	go func(ch <-chan interface{}) {
-		isPaused := (<-ch).(bool)
+		for {
+			data := <-ch
+			isPaused := data.(bool)
 
-		state.mtx.Lock()
-		if isPaused {
-			state.status = paused
-		} else {
-			state.status = playing
+			state.mtx.Lock()
+			if isPaused {
+				state.status = paused
+			} else {
+				state.status = playing
+			}
+			state.mtx.Unlock()
 		}
-		state.mtx.Unlock()
 	}(pause)
 
 	return state, nil
