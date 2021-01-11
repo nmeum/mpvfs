@@ -76,6 +76,14 @@ func (p *playerState) IsPlaying() bool {
 	return r
 }
 
+func (p *playerState) Volume() uint {
+	p.mtx.Lock()
+	r := p.volume
+	p.mtx.Unlock()
+
+	return uint(r)
+}
+
 func (p *playerState) Index() uint {
 	return 0
 }
