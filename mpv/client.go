@@ -41,7 +41,7 @@ func NewClient(path string) (*Client, error) {
 		msgChan:   make(chan response, 5),
 	}
 
-	errChan := make(chan error)
+	errChan := make(chan error, 1)
 	c.ErrChan = errChan
 
 	go c.recvLoop(c.msgChan, errChan)
@@ -96,10 +96,11 @@ func (c *Client) handleResp(msg response) {
 func (c *Client) handleChange(msg response) {
 	c.propMtx.Lock()
 	ch, ok := c.propChans[msg.PropertyName]
+	c.propMtx.Unlock()
+
 	if ok {
 		ch <- msg.Data
 	}
-	c.propMtx.Unlock()
 }
 
 func (c *Client) nextID() msgID {
