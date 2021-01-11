@@ -172,6 +172,7 @@ func (c *Client) ObserveProperty(name string) (<-chan interface{}, error) {
 	ch = make(chan interface{})
 	c.propChans[name] = ch
 
+	// TODO: Figure out how observe_property IDs are supposed to work
 	_, err := c.ExecCmd("observe_property", 1, name)
 	if err != nil {
 		delete(c.propChans, name)
