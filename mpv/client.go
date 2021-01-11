@@ -12,7 +12,9 @@ import (
 
 type Client struct {
 	id msgID
-	mq queue
+
+	respMtx *sync.Mutex
+	respMap map[msgID]chan response
 
 	propMtx   *sync.Mutex
 	propChans map[string]chan interface{}
@@ -31,11 +33,12 @@ func NewClient(path string) (*Client, error) {
 
 	c := &Client{
 		id:        math.MinInt32,
-		mq:        newQueue(),
+		respMtx:   new(sync.Mutex),
+		respMap:   make(map[msgID]chan response),
 		propMtx:   new(sync.Mutex),
 		propChans: make(map[string]chan interface{}),
 		conn:      conn,
-		msgChan:   make(chan response),
+		msgChan:   make(chan response, 5),
 	}
 
 	errChan := make(chan error)
@@ -73,10 +76,20 @@ func (c *Client) dispatchLoop(ch <-chan response) {
 	for {
 		msg := <-ch
 		if msg.Event == "property-change" {
-			c.handleChange(msg)
+			go c.handleChange(msg)
 		} else {
-			c.mq.Signal(msg)
+			go c.handleResp(msg)
 		}
+	}
+}
+
+func (c *Client) handleResp(msg response) {
+	c.respMtx.Lock()
+	ch, ok := c.respMap[msg.ID]
+	c.respMtx.Unlock()
+
+	if ok {
+		ch <- msg
 	}
 }
 
@@ -111,18 +124,26 @@ func (c *Client) ExecCmd(name string, args ...interface{}) (interface{}, error) 
 		return nil, err
 	}
 
+	ch := make(chan response)
+	defer close(ch)
+
+	c.respMtx.Lock()
+	c.respMap[req.ID] = ch
+	defer delete(c.respMap, req.ID)
+	c.respMtx.Unlock()
+
 	// Every message must be terminated with \n.
 	_, err = c.conn.Write([]byte("\n"))
 	if err != nil {
 		return nil, err
 	}
 
-	response := c.mq.Wait(req.ID)
-	if response.Error != noError {
-		return nil, errors.New(response.Error)
+	resp := <-ch
+	if resp.Error != noError {
+		return nil, errors.New(resp.Error)
 	}
 
-	return response.Data, nil
+	return resp.Data, nil
 }
 
 func (c *Client) SetProperty(name string, value interface{}) error {
