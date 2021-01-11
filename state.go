@@ -16,6 +16,7 @@ type playerState struct {
 	mpv *mpv.Client
 	mtx *sync.Mutex
 
+	volume float64
 	status playback
 }
 
@@ -26,23 +27,37 @@ func newPlayerState(mpv *mpv.Client) (*playerState, error) {
 	if err != nil {
 		return nil, err
 	}
+	go state.updateState(pause)
 
-	go func(ch <-chan interface{}) {
-		for {
-			data := <-ch
-			isPaused := data.(bool)
-
-			state.mtx.Lock()
-			if isPaused {
-				state.status = paused
-			} else {
-				state.status = playing
-			}
-			state.mtx.Unlock()
-		}
-	}(pause)
+	volume, err := mpv.ObserveProperty("volume")
+	if err != nil {
+		return nil, err
+	}
+	go state.updateVolume(volume)
 
 	return state, nil
+}
+
+func (p *playerState) updateState(ch <-chan interface{}) {
+	for data := range ch {
+		isPaused := data.(bool)
+		p.mtx.Lock()
+		if isPaused {
+			p.status = paused
+		} else {
+			p.status = playing
+		}
+		p.mtx.Unlock()
+	}
+
+}
+
+func (p *playerState) updateVolume(ch <-chan interface{}) {
+	for data := range ch {
+		p.mtx.Lock()
+		p.volume = data.(float64)
+		p.mtx.Unlock()
+	}
 }
 
 func (p *playerState) IsPaused() bool {
