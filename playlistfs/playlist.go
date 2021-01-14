@@ -1,7 +1,6 @@
 package playlistfs
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 )
@@ -19,14 +18,13 @@ type Entry struct {
 func PlaylistEntry(buf []byte) (*Entry, error) {
 	var entry Entry
 
-	fields, err := parseFields(buf)
+	fields, err := parseFields(buf, 1, -1)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, field := range fields {
-		var i int
-		for i = 0; i < len(field); i++ {
+		for i := 0; i < len(field); i++ {
 			data := field[i]
 			switch i {
 			case posFn:
@@ -35,10 +33,6 @@ func PlaylistEntry(buf []byte) (*Entry, error) {
 				entry.Description = strings.Join(field[i:], " ")
 				return &entry, nil
 			}
-		}
-
-		if i < 1 {
-			return nil, errors.New("insufficient amount of fields")
 		}
 	}
 

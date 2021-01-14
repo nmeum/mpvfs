@@ -8,8 +8,7 @@ import (
 
 type Fields []string
 
-// TODO: Maybe pass a callback or refactor this into its own type.
-func parseFields(buf []byte) ([]Fields, error) {
+func parseFields(buf []byte, min int, max int) ([]Fields, error) {
 	lineRdr := bytes.NewBuffer(buf)
 	lineScr := bufio.NewScanner(lineRdr)
 
@@ -25,8 +24,11 @@ func parseFields(buf []byte) ([]Fields, error) {
 			fields = append(fields, field)
 		}
 
-		if len(fields) == 0 {
-			return []Fields{}, errors.New("empty line")
+		numFields := len(fields)
+		if numFields < min {
+			return []Fields{}, errors.New("below minimum")
+		} else if max != -1 && numFields > max {
+			return []Fields{}, errors.New("above maximum")
 		}
 
 		result = append(result, fields)

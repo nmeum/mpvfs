@@ -24,14 +24,13 @@ type Command struct {
 func CtlCmd(buf []byte) (*Command, error) {
 	var cmd Command
 
-	fields, err := parseFields(buf)
+	fields, err := parseFields(buf, 2, 3)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, field := range fields {
-		var i int
-		for i = 0; i < len(field); i++ {
+		for i := 0; i < len(field); i++ {
 			data := field[i]
 			switch i {
 			case posCmd:
@@ -47,10 +46,6 @@ func CtlCmd(buf []byte) (*Command, error) {
 				}
 				cmd.Arg = uint(arg)
 			}
-		}
-
-		if i >= 2 && i <= 3 {
-			return nil, errors.New("insufficient amount of fields")
 		}
 	}
 

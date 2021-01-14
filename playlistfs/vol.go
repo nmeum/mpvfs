@@ -18,21 +18,20 @@ type Volume struct {
 func VolCmd(buf []byte) (*Volume, error) {
 	var vol Volume
 
-	fields, err := parseFields(buf)
+	fields, err := parseFields(buf, 2, -1)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, field := range fields {
-		var i int
-		for i = 0; i < len(field); i++ {
+		for i := 0; i < len(field); i++ {
 			data := field[i]
 			switch i {
 			case posVolCmd:
 				if data != "vol" {
 					return nil, ErrNoCmd
 				}
-			case posVol:
+			default:
 				lvl, err := strconv.ParseUint(field[i], 10, 8)
 				if err != nil {
 					return nil, err
@@ -42,10 +41,6 @@ func VolCmd(buf []byte) (*Volume, error) {
 
 				vol.Levels = append(vol.Levels, uint(lvl))
 			}
-		}
-
-		if i != 2 {
-			return nil, errors.New("insufficient amount of fields")
 		}
 	}
 
