@@ -39,7 +39,7 @@ func startServer(mpvClient *mpv.Client) {
 
 	config := playlistfs.Config{
 		playctl{state, mpvClient},
-		ControlFile{"playlist"},
+		playlist{state, mpvClient},
 		playvol{state, mpvClient},
 	}
 
