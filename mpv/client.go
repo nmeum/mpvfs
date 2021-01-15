@@ -176,7 +176,10 @@ func (c *Client) ObserveProperty(name string) (<-chan interface{}, error) {
 
 	_, err := c.ExecCmd("observe_property", id, name)
 	if err != nil {
+		c.propMtx.Lock()
 		delete(c.propChans, id)
+		c.propMtx.Unlock()
+		return nil, err
 	}
 
 	return ch, nil
