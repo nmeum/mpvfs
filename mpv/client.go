@@ -11,13 +11,13 @@ import (
 )
 
 type Client struct {
-	id int32
+	msgID int32
 
 	respMtx *sync.Mutex
 	respMap map[int32]chan response
 
 	propMtx   *sync.Mutex
-	propId    int32
+	propID    int32
 	propChans map[int32]chan interface{}
 
 	conn    net.Conn
@@ -33,8 +33,8 @@ func NewClient(path string) (*Client, error) {
 	}
 
 	c := &Client{
-		id:        math.MinInt32,
-		propId:    math.MinInt32,
+		msgID:     math.MinInt32,
+		propID:    math.MinInt32,
 		respMtx:   new(sync.Mutex),
 		respMap:   make(map[int32]chan response),
 		propMtx:   new(sync.Mutex),
@@ -107,13 +107,13 @@ func (c *Client) handleChange(msg response) {
 
 func (c *Client) nextID() int32 {
 	// XXX: Mutex needed here?
-	if c.id == math.MaxInt32 {
-		c.id = math.MinInt32
+	if c.msgID == math.MaxInt32 {
+		c.msgID = math.MinInt32
 	} else {
-		c.id++
+		c.msgID++
 	}
 
-	return c.id
+	return c.msgID
 }
 
 func (c *Client) newReq(name interface{}, args ...interface{}) *request {
@@ -167,11 +167,11 @@ func (c *Client) GetProperty(name string) (interface{}, error) {
 func (c *Client) ObserveProperty(name string) (<-chan interface{}, error) {
 	c.propMtx.Lock()
 	ch := make(chan interface{})
-	id := c.propId
+	id := c.propID
 	c.propChans[id] = ch
 
 	// TODO: Don't reuse existing property IDs on overflow.
-	c.propId += 1
+	c.propID++
 	c.propMtx.Unlock()
 
 	_, err := c.ExecCmd("observe_property", id, name)
