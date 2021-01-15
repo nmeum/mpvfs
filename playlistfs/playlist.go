@@ -33,10 +33,11 @@ func PlaylistEntry(buf []byte) (*Entry, error) {
 				entry.FileName = data
 			case posDesc:
 				entry.Description = strings.Join(field[i:], " ")
+				return &entry, nil
 			}
 		}
 
-		if i < 1 || i > 2 {
+		if i < 1 {
 			return nil, errors.New("insufficient amount of fields")
 		}
 	}
