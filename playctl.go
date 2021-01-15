@@ -42,7 +42,12 @@ func (c playctl) Write(off int64, p []byte) (int, error) {
 
 	switch cmd.Name {
 	case "stop":
-		panic("not implemented")
+		err := c.mpv.SetProperty("playlist-pos", 0)
+		if err != nil {
+			return 0, err
+		}
+
+		fallthrough
 	case "pause":
 		err := c.mpv.SetProperty("pause", true)
 		if err != nil {
