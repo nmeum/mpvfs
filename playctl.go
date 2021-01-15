@@ -35,7 +35,7 @@ func (c playctl) Read(off int64, p []byte) (int, error) {
 }
 
 func (c playctl) Write(off int64, p []byte) (int, error) {
-	cmd, err := playlistfs.ParseCtlCmd(p)
+	cmd, err := playlistfs.CtlCmd(p)
 	if err != nil {
 		return 0, err
 	}

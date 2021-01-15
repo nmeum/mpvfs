@@ -23,7 +23,7 @@ type Command struct {
 	Arg  uint
 }
 
-func ParseCtlCmd(buf []byte) (*Command, error) {
+func CtlCmd(buf []byte) (*Command, error) {
 	reader := bytes.NewBuffer(buf)
 
 	scanner := bufio.NewScanner(reader)
