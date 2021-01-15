@@ -68,17 +68,33 @@ func (p *playerState) updateVolume(ch <-chan interface{}) {
 func (p *playerState) updatePlaylist(ch <-chan interface{}) {
 	for data := range ch {
 		newCount := int(data.(float64))
-
-		nameProp := fmt.Sprintf("playlist/%d/filename", newCount-1)
-		name, err := p.mpv.GetProperty(nameProp)
-		if err != nil {
-			panic(err)
-		}
+		// TODO: handle -1 case
 
 		p.mtx.Lock()
-		p.playlist = append(p.playlist, name.(string))
+		entry, err := p.song(newCount - 1)
+		if err != nil {
+			panic(err) // TODO: error channel
+		}
+		p.playlist = append(p.playlist, entry)
 		p.mtx.Unlock()
 	}
+}
+
+func (p *playerState) song(idx int) (string, error) {
+	nameProp := fmt.Sprintf("playlist/%d/filename", idx)
+	name, err := p.mpv.GetProperty(nameProp)
+	if err != nil {
+		return "", err
+	}
+
+	titleProp := fmt.Sprintf("playlist/%d/title", idx)
+	title, err := p.mpv.GetProperty(titleProp)
+	if err != nil {
+		// Property may not be available
+		return name.(string), nil
+	}
+
+	return fmt.Sprintf("%s \"%s\"", name, title), nil
 }
 
 func (p *playerState) IsPaused() bool {
