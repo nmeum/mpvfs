@@ -8,6 +8,7 @@ import (
 	"math"
 	"net"
 	"sync"
+	"sync/atomic"
 )
 
 type Client struct {
@@ -106,14 +107,8 @@ func (c *Client) handleChange(msg response) {
 }
 
 func (c *Client) nextID() int32 {
-	// XXX: Mutex needed here?
-	if c.msgID == math.MaxInt32 {
-		c.msgID = math.MinInt32
-	} else {
-		c.msgID++
-	}
-
-	return c.msgID
+	// Signed integer overflow is well-defined in go.
+	return atomic.AddInt32(&c.msgID, 1)
 }
 
 func (c *Client) newReq(name interface{}, args ...interface{}) *request {
