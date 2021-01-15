@@ -27,23 +27,20 @@ type playerState struct {
 func newPlayerState(mpv *mpv.Client) (*playerState, error) {
 	state := &playerState{mpv: mpv, mtx: new(sync.Mutex)}
 
-	pause, err := mpv.ObserveProperty("pause")
-	if err != nil {
-		return nil, err
+	observers := map[string]func(ch <-chan interface{}){
+		"pause":          state.updateState,
+		"volume":         state.updateVolume,
+		"playlist-count": state.updatePlaylist,
 	}
-	go state.updateState(pause)
 
-	volume, err := mpv.ObserveProperty("volume")
-	if err != nil {
-		return nil, err
-	}
-	go state.updateVolume(volume)
+	for property, observer := range observers {
+		ch, err := mpv.ObserveProperty(property)
+		if err != nil {
+			return nil, err
+		}
 
-	count, err := mpv.ObserveProperty("playlist-count")
-	if err != nil {
-		return nil, err
+		go observer(ch)
 	}
-	go state.updatePlaylist(count)
 
 	return state, nil
 }
