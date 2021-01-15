@@ -24,6 +24,11 @@ func parseFields(buf []byte, min int, max int) ([]Fields, error) {
 			fields = append(fields, field)
 		}
 
+		err := fieldScr.Err()
+		if err != nil {
+			return []Fields{}, err
+		}
+
 		numFields := len(fields)
 		if numFields < min {
 			return []Fields{}, errors.New("below minimum")
