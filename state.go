@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/nmeum/mpvfs/mpv"
 	"sync"
+	"sync/atomic"
 )
 
 type playback int
@@ -16,7 +17,7 @@ type playerState struct {
 	mpv *mpv.Client
 	mtx *sync.Mutex
 
-	volume float64
+	volume uint32
 	status playback
 }
 
@@ -54,9 +55,8 @@ func (p *playerState) updateState(ch <-chan interface{}) {
 
 func (p *playerState) updateVolume(ch <-chan interface{}) {
 	for data := range ch {
-		p.mtx.Lock()
-		p.volume = data.(float64)
-		p.mtx.Unlock()
+		vol := data.(float64)
+		atomic.StoreUint32(&p.volume, uint32(vol))
 	}
 }
 
@@ -77,11 +77,8 @@ func (p *playerState) IsPlaying() bool {
 }
 
 func (p *playerState) Volume() uint {
-	p.mtx.Lock()
-	r := p.volume
-	p.mtx.Unlock()
-
-	return uint(r)
+	vol := atomic.LoadUint32(&p.volume)
+	return uint(vol)
 }
 
 func (p *playerState) Index() uint {
