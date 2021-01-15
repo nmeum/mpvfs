@@ -88,7 +88,7 @@ func (c *Client) dispatchLoop(ch <-chan response) {
 
 func (c *Client) handleResp(msg response) {
 	c.respMtx.Lock()
-	ch, ok := c.respMap[msg.ID]
+	ch, ok := c.respMap[msg.ReqID]
 	c.respMtx.Unlock()
 
 	if ok {

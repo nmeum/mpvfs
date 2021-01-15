@@ -10,9 +10,10 @@ const noError = "success"
 type response struct {
 	Error string      `json:"error"`
 	Data  interface{} `json:"data"`
-	ID    int32       `json:"request_id"`
+	ReqID int32       `json:"request_id"`
 
 	// Additional fields used by observe events
+	ID           int32  `json:"id"`
 	Event        string `json:"event"`
 	PropertyName string `json:"name"`
 }
