@@ -106,14 +106,13 @@ func (c *Client) handleChange(msg response) {
 	}
 }
 
-func (c *Client) nextID() int32 {
-	// Signed integer overflow is well-defined in go.
-	return atomic.AddInt32(&c.msgID, 1)
-}
-
 func (c *Client) newReq(name interface{}, args ...interface{}) *request {
 	argv := append([]interface{}{name}, args...)
-	return &request{Cmd: argv, ID: c.nextID()}
+
+	// Signed integer overflow is well-defined in go.
+	id := atomic.AddInt32(&c.msgID, 1)
+
+	return &request{Cmd: argv, ID: id}
 }
 
 func (c *Client) ExecCmd(name string, args ...interface{}) (interface{}, error) {
