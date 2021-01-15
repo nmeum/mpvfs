@@ -1,8 +1,6 @@
 package playlistfs
 
 import (
-	"bufio"
-	"bytes"
 	"errors"
 	"fmt"
 	"strconv"
@@ -24,33 +22,36 @@ type Command struct {
 }
 
 func CtlCmd(buf []byte) (*Command, error) {
-	reader := bytes.NewBuffer(buf)
-
-	scanner := bufio.NewScanner(reader)
-	scanner.Split(bufio.ScanWords)
-
 	var cmd Command
-	for i := 0; scanner.Scan(); i++ {
-		data := scanner.Text()
-		switch i {
-		case posCmd:
-			if data != "cmd" {
-				return nil, ErrNoCmd
-			}
-		case posName:
-			cmd.Name = data
-		case posArg:
-			arg, err := strconv.ParseUint(data, 10, 32)
-			if err != nil {
-				return nil, err
-			}
-			cmd.Arg = uint(arg)
-		}
-	}
 
-	err := scanner.Err()
+	fields, err := parseFields(buf)
 	if err != nil {
 		return nil, err
+	}
+
+	for _, field := range fields {
+		var i int
+		for i = 0; i < len(field); i++ {
+			data := field[i]
+			switch i {
+			case posCmd:
+				if data != "cmd" {
+					return nil, ErrNoCmd
+				}
+			case posName:
+				cmd.Name = data
+			case posArg:
+				arg, err := strconv.ParseUint(data, 10, 32)
+				if err != nil {
+					return nil, err
+				}
+				cmd.Arg = uint(arg)
+			}
+		}
+
+		if i >= 2 && i <= 3 {
+			return nil, errors.New("insufficient amount of fields")
+		}
 	}
 
 	return &cmd, nil
