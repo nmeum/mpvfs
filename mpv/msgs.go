@@ -7,12 +7,10 @@ import (
 
 const noError = "success"
 
-type msgID int32
-
 type response struct {
 	Error string      `json:"error"`
 	Data  interface{} `json:"data"`
-	ID    msgID       `json:"request_id"`
+	ID    int32       `json:"request_id"`
 
 	// Additional fields used by observe events
 	Event        string `json:"event"`
@@ -21,7 +19,7 @@ type response struct {
 
 type request struct {
 	Cmd []interface{} `json:"command"`
-	ID  msgID         `json:"request_id"`
+	ID  int32         `json:"request_id"`
 }
 
 func (r *request) Encode(w io.Writer) error {

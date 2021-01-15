@@ -11,14 +11,14 @@ import (
 )
 
 type Client struct {
-	id msgID
+	id int32
 
 	respMtx *sync.Mutex
-	respMap map[msgID]chan response
+	respMap map[int32]chan response
 
 	propMtx   *sync.Mutex
-	propId    msgID
-	propChans map[msgID]chan interface{}
+	propId    int32
+	propChans map[int32]chan interface{}
 
 	conn    net.Conn
 	msgChan chan response
@@ -36,9 +36,9 @@ func NewClient(path string) (*Client, error) {
 		id:        math.MinInt32,
 		propId:    math.MinInt32,
 		respMtx:   new(sync.Mutex),
-		respMap:   make(map[msgID]chan response),
+		respMap:   make(map[int32]chan response),
 		propMtx:   new(sync.Mutex),
-		propChans: make(map[msgID]chan interface{}),
+		propChans: make(map[int32]chan interface{}),
 		conn:      conn,
 		msgChan:   make(chan response, 5),
 	}
@@ -105,7 +105,7 @@ func (c *Client) handleChange(msg response) {
 	}
 }
 
-func (c *Client) nextID() msgID {
+func (c *Client) nextID() int32 {
 	// XXX: Mutex needed here?
 	if c.id == math.MaxInt32 {
 		c.id = math.MinInt32
