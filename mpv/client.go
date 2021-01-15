@@ -17,7 +17,8 @@ type Client struct {
 	respMap map[msgID]chan response
 
 	propMtx   *sync.Mutex
-	propChans map[string]chan interface{}
+	propId    msgID
+	propChans map[msgID]chan interface{}
 
 	conn    net.Conn
 	msgChan chan response
@@ -33,10 +34,11 @@ func NewClient(path string) (*Client, error) {
 
 	c := &Client{
 		id:        math.MinInt32,
+		propId:    math.MinInt32,
 		respMtx:   new(sync.Mutex),
 		respMap:   make(map[msgID]chan response),
 		propMtx:   new(sync.Mutex),
-		propChans: make(map[string]chan interface{}),
+		propChans: make(map[msgID]chan interface{}),
 		conn:      conn,
 		msgChan:   make(chan response, 5),
 	}
@@ -95,7 +97,7 @@ func (c *Client) handleResp(msg response) {
 
 func (c *Client) handleChange(msg response) {
 	c.propMtx.Lock()
-	ch, ok := c.propChans[msg.PropertyName]
+	ch, ok := c.propChans[msg.ID]
 	c.propMtx.Unlock()
 
 	if ok {
@@ -162,23 +164,20 @@ func (c *Client) GetProperty(name string) (interface{}, error) {
 	return value, nil
 }
 
-// TODO: Allow multiple observers of same property
 func (c *Client) ObserveProperty(name string) (<-chan interface{}, error) {
 	c.propMtx.Lock()
-	ch, ok := c.propChans[name]
-	if ok {
-		return nil, errors.New("property already observed")
-	}
+	ch := make(chan interface{})
+	id := c.propId
+	c.propChans[id] = ch
 
-	ch = make(chan interface{})
-	c.propChans[name] = ch
-
-	// TODO: Figure out how observe_property IDs are supposed to work
-	_, err := c.ExecCmd("observe_property", c.nextID(), name)
-	if err != nil {
-		delete(c.propChans, name)
-	}
+	// TODO: Don't reuse existing property IDs on overflow.
+	c.propId += 1
 	c.propMtx.Unlock()
+
+	_, err := c.ExecCmd("observe_property", id, name)
+	if err != nil {
+		delete(c.propChans, id)
+	}
 
 	return ch, nil
 }
