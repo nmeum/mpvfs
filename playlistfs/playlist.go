@@ -5,18 +5,13 @@ import (
 	"strings"
 )
 
-const (
-	posFn = iota
-	posDesc
-)
-
-type Entry struct {
+type Playlist struct {
 	FileName    string
 	Description string
 }
 
-func PlaylistEntry(buf []byte) (*Entry, error) {
-	var entry Entry
+func PlaylistCmd(buf []byte) (*Playlist, error) {
+	var entry Playlist
 
 	fields, err := parseFields(buf, 1, -1)
 	if err != nil {
@@ -27,9 +22,9 @@ func PlaylistEntry(buf []byte) (*Entry, error) {
 		for i := 0; i < len(field); i++ {
 			data := field[i]
 			switch i {
-			case posFn:
+			case 0:
 				entry.FileName = data
-			case posDesc:
+			case 1:
 				entry.Description = strings.Join(field[i:], " ")
 				return &entry, nil
 			}
@@ -39,6 +34,6 @@ func PlaylistEntry(buf []byte) (*Entry, error) {
 	return &entry, nil
 }
 
-func (e *Entry) String() string {
-	return fmt.Sprintf("%s '%s'", e.FileName, e.Description)
+func (p *Playlist) String() string {
+	return fmt.Sprintf("%s '%s'", p.FileName, p.Description)
 }

@@ -23,7 +23,7 @@ func (c playctl) Read(off int64, p []byte) (int, error) {
 		panic("unreachable")
 	}
 
-	cmd := playlistfs.Command{Name: name, Arg: c.state.Index()}
+	cmd := playlistfs.Control{Name: name, Arg: c.state.Index()}
 	reader := strings.NewReader(cmd.String() + "\n")
 
 	_, err := reader.Seek(off, io.SeekStart)

@@ -1,28 +1,17 @@
 package playlistfs
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 )
 
-var (
-	ErrNoCmd = errors.New("not a playlistfs command")
-)
-
-const (
-	posCmd = iota
-	posName
-	posArg
-)
-
-type Command struct {
+type Control struct {
 	Name string
 	Arg  uint
 }
 
-func CtlCmd(buf []byte) (*Command, error) {
-	var cmd Command
+func CtlCmd(buf []byte) (*Control, error) {
+	var cmd Control
 
 	fields, err := parseFields(buf, 2, 3)
 	if err != nil {
@@ -33,13 +22,13 @@ func CtlCmd(buf []byte) (*Command, error) {
 		for i := 0; i < len(field); i++ {
 			data := field[i]
 			switch i {
-			case posCmd:
+			case 0:
 				if data != "cmd" {
-					return nil, ErrNoCmd
+					return nil, ErrNoCtl
 				}
-			case posName:
+			case 1:
 				cmd.Name = data
-			case posArg:
+			case 2:
 				arg, err := strconv.ParseUint(data, 10, 32)
 				if err != nil {
 					return nil, err
@@ -52,6 +41,6 @@ func CtlCmd(buf []byte) (*Command, error) {
 	return &cmd, nil
 }
 
-func (c *Command) String() string {
+func (c *Control) String() string {
 	return fmt.Sprintf("cmd %s %d", c.Name, c.Arg)
 }

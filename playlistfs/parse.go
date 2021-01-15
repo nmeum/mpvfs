@@ -3,7 +3,6 @@ package playlistfs
 import (
 	"bufio"
 	"bytes"
-	"errors"
 )
 
 type Fields []string
@@ -31,9 +30,9 @@ func parseFields(buf []byte, min int, max int) ([]Fields, error) {
 
 		numFields := len(fields)
 		if numFields < min {
-			return []Fields{}, errors.New("below minimum")
+			return []Fields{}, ErrTooFewArgs
 		} else if max != -1 && numFields > max {
-			return []Fields{}, errors.New("above maximum")
+			return []Fields{}, ErrTooManyArgs
 		}
 
 		result = append(result, fields)

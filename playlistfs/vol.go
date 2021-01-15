@@ -1,14 +1,8 @@
 package playlistfs
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
-)
-
-const (
-	posVolCmd = iota
-	posVol
 )
 
 type Volume struct {
@@ -27,16 +21,16 @@ func VolCmd(buf []byte) (*Volume, error) {
 		for i := 0; i < len(field); i++ {
 			data := field[i]
 			switch i {
-			case posVolCmd:
+			case 0:
 				if data != "vol" {
-					return nil, ErrNoCmd
+					return nil, ErrNoVol
 				}
 			default:
 				lvl, err := strconv.ParseUint(field[i], 10, 8)
 				if err != nil {
 					return nil, err
 				} else if lvl > 100 {
-					return nil, errors.New("invalid volume level")
+					return nil, ErrInvalidVol
 				}
 
 				vol.Levels = append(vol.Levels, uint(lvl))

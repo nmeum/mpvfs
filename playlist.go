@@ -17,7 +17,7 @@ func (l playlist) Read(off int64, p []byte) (int, error) {
 }
 
 func (l playlist) Write(off int64, p []byte) (int, error) {
-	entry, err := playlistfs.PlaylistEntry(p)
+	entry, err := playlistfs.PlaylistCmd(p)
 	if err != nil {
 		return 0, err
 	}

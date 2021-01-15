@@ -14,8 +14,8 @@ type playvol struct {
 }
 
 func (c playvol) Read(off int64, p []byte) (int, error) {
-	cmd := playlistfs.Command{Name: "vol", Arg: c.state.Volume()}
-	reader := strings.NewReader(cmd.String() + "\n")
+	vol := playlistfs.Volume{[]uint{c.state.Volume()}}
+	reader := strings.NewReader(vol.String() + "\n")
 
 	_, err := reader.Seek(off, io.SeekStart)
 	if err != nil {
