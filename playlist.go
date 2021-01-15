@@ -4,7 +4,8 @@ import (
 	"github.com/nmeum/mpvfs/mpv"
 	"github.com/nmeum/mpvfs/playlistfs"
 
-	"errors"
+	"io"
+	"strings"
 )
 
 type playlist struct {
@@ -13,7 +14,15 @@ type playlist struct {
 }
 
 func (l playlist) Read(off int64, p []byte) (int, error) {
-	return 0, errors.New("not implemented")
+	playlist := strings.Join(l.state.Playlist(), "\n")
+	reader := strings.NewReader(playlist + "\n")
+
+	_, err := reader.Seek(off, io.SeekStart)
+	if err != nil {
+		return 0, io.EOF
+	}
+
+	return reader.Read(p)
 }
 
 func (l playlist) Write(off int64, p []byte) (int, error) {

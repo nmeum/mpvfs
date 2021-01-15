@@ -2,6 +2,8 @@ package main
 
 import (
 	"github.com/nmeum/mpvfs/mpv"
+
+	"fmt"
 	"sync"
 	"sync/atomic"
 )
@@ -17,8 +19,9 @@ type playerState struct {
 	mpv *mpv.Client
 	mtx *sync.Mutex
 
-	volume uint32
-	status playback
+	volume   uint32
+	status   playback
+	playlist []string
 }
 
 func newPlayerState(mpv *mpv.Client) (*playerState, error) {
@@ -36,6 +39,12 @@ func newPlayerState(mpv *mpv.Client) (*playerState, error) {
 	}
 	go state.updateVolume(volume)
 
+	count, err := mpv.ObserveProperty("playlist-count")
+	if err != nil {
+		return nil, err
+	}
+	go state.updatePlaylist(count)
+
 	return state, nil
 }
 
@@ -50,13 +59,28 @@ func (p *playerState) updateState(ch <-chan interface{}) {
 		}
 		p.mtx.Unlock()
 	}
-
 }
 
 func (p *playerState) updateVolume(ch <-chan interface{}) {
 	for data := range ch {
 		vol := data.(float64)
 		atomic.StoreUint32(&p.volume, uint32(vol))
+	}
+}
+
+func (p *playerState) updatePlaylist(ch <-chan interface{}) {
+	for data := range ch {
+		newCount := int(data.(float64))
+
+		nameProp := fmt.Sprintf("playlist/%d/filename", newCount-1)
+		name, err := p.mpv.GetProperty(nameProp)
+		if err != nil {
+			panic(err)
+		}
+
+		p.mtx.Lock()
+		p.playlist = append(p.playlist, name.(string))
+		p.mtx.Unlock()
 	}
 }
 
@@ -79,6 +103,14 @@ func (p *playerState) IsPlaying() bool {
 func (p *playerState) Volume() uint {
 	vol := atomic.LoadUint32(&p.volume)
 	return uint(vol)
+}
+
+func (p *playerState) Playlist() []string {
+	p.mtx.Lock()
+	r := p.playlist
+	p.mtx.Unlock()
+
+	return r
 }
 
 func (p *playerState) Index() uint {
