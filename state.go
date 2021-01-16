@@ -15,10 +15,16 @@ type playerState struct {
 	volume   uint32
 	playing  bool
 	playlist []string
+
+	errChan chan error
 }
 
 func newPlayerState(mpv *mpv.Client) (*playerState, error) {
-	state := &playerState{mpv: mpv, mtx: new(sync.Mutex)}
+	state := &playerState{
+		mpv:     mpv,
+		mtx:     new(sync.Mutex),
+		errChan: make(chan error, 1),
+	}
 
 	observers := map[string]func(ch <-chan interface{}){
 		"pause":          state.updateState,
@@ -36,6 +42,10 @@ func newPlayerState(mpv *mpv.Client) (*playerState, error) {
 	}
 
 	return state, nil
+}
+
+func (p *playerState) ErrChan() <-chan error {
+	return p.errChan
 }
 
 func (p *playerState) updateState(ch <-chan interface{}) {
@@ -63,7 +73,9 @@ func (p *playerState) updatePlaylist(ch <-chan interface{}) {
 		p.mtx.Lock()
 		entry, err := p.song(newCount - 1)
 		if err != nil {
-			panic(err) // TODO: error channel
+			p.mtx.Unlock()
+			p.errChan <- err
+			continue
 		}
 		p.playlist = append(p.playlist, entry)
 		p.mtx.Unlock()
