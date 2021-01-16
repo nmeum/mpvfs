@@ -80,7 +80,7 @@ func (c *Client) dispatchLoop(ch <-chan response) {
 		msg := <-ch
 		if msg.Event == "property-change" {
 			go c.handleChange(msg)
-		} else {
+		} else if msg.Event == "" {
 			go c.handleResp(msg)
 		}
 	}
