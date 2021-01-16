@@ -8,19 +8,12 @@ import (
 	"sync/atomic"
 )
 
-type playback int
-
-const (
-	paused = iota
-	playing
-)
-
 type playerState struct {
 	mpv *mpv.Client
 	mtx *sync.Mutex
 
 	volume   uint32
-	status   playback
+	playing  bool
 	playlist []string
 }
 
@@ -47,13 +40,8 @@ func newPlayerState(mpv *mpv.Client) (*playerState, error) {
 
 func (p *playerState) updateState(ch <-chan interface{}) {
 	for data := range ch {
-		isPaused := data.(bool)
 		p.mtx.Lock()
-		if isPaused {
-			p.status = paused
-		} else {
-			p.status = playing
-		}
+		p.playing = !(data.(bool))
 		p.mtx.Unlock()
 	}
 }
@@ -101,7 +89,7 @@ func (p *playerState) song(idx int) (string, error) {
 
 func (p *playerState) IsPlaying() bool {
 	p.mtx.Lock()
-	r := p.status == playing
+	r := p.playing
 	p.mtx.Unlock()
 
 	return r
