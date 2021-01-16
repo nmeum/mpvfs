@@ -13,7 +13,7 @@ type Control struct {
 func CtlCmd(buf []byte) (*Control, error) {
 	var cmd Control
 
-	fields, err := parseFields(buf, 2, 3)
+	fields, err := parseFields(buf, 1, 2)
 	if err != nil {
 		return nil, err
 	}
@@ -23,12 +23,8 @@ func CtlCmd(buf []byte) (*Control, error) {
 			data := field[i]
 			switch i {
 			case 0:
-				if data != "cmd" {
-					return nil, ErrNoCtl
-				}
-			case 1:
 				cmd.Name = data
-			case 2:
+			case 1:
 				arg, err := strconv.ParseUint(data, 10, 32)
 				if err != nil {
 					return nil, err
@@ -42,5 +38,5 @@ func CtlCmd(buf []byte) (*Control, error) {
 }
 
 func (c *Control) String() string {
-	return fmt.Sprintf("cmd %s %d", c.Name, c.Arg)
+	return fmt.Sprintf("%s %d", c.Name, c.Arg)
 }
