@@ -12,6 +12,7 @@ type playerState struct {
 	mpv *mpv.Client
 	mtx *sync.Mutex
 
+	pos      int32
 	volume   uint32
 	playing  bool
 	playlist []string
@@ -21,6 +22,7 @@ type playerState struct {
 
 func newPlayerState(mpv *mpv.Client) (*playerState, error) {
 	state := &playerState{
+		pos:     -1,
 		mpv:     mpv,
 		mtx:     new(sync.Mutex),
 		errChan: make(chan error, 1),
@@ -29,6 +31,7 @@ func newPlayerState(mpv *mpv.Client) (*playerState, error) {
 	observers := map[string]func(ch <-chan interface{}){
 		"pause":          state.updateState,
 		"volume":         state.updateVolume,
+		"playlist-pos":   state.updatePosition,
 		"playlist-count": state.updatePlaylist,
 	}
 
@@ -60,6 +63,13 @@ func (p *playerState) updateVolume(ch <-chan interface{}) {
 	for data := range ch {
 		vol := data.(float64)
 		atomic.StoreUint32(&p.volume, uint32(vol))
+	}
+}
+
+func (p *playerState) updatePosition(ch <-chan interface{}) {
+	for data := range ch {
+		pos := data.(float64)
+		atomic.StoreInt32(&p.pos, int32(pos))
 	}
 }
 
@@ -120,6 +130,9 @@ func (p *playerState) Playlist() []string {
 	return r
 }
 
-func (p *playerState) Index() uint {
-	return 0
+// Index returns the current position on the playlist, or
+// -1 if there is no current entry (e.g. playlist is empty).
+func (p *playerState) Index() int {
+	pos := atomic.LoadInt32(&p.pos)
+	return int(pos)
 }

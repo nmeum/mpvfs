@@ -4,6 +4,7 @@ import (
 	"github.com/nmeum/mpvfs/mpv"
 	"github.com/nmeum/mpvfs/playlistfs"
 
+	"errors"
 	"io"
 	"strings"
 )
@@ -21,7 +22,12 @@ func (c playctl) Read(off int64, p []byte) (int, error) {
 		name = "pause"
 	}
 
-	cmd := playlistfs.Control{Name: name, Arg: c.state.Index()}
+	pos := c.state.Index()
+	if pos < 0 {
+		return 0, errors.New("no current playlist")
+	}
+
+	cmd := playlistfs.Control{Name: name, Arg: uint(pos)}
 	reader := strings.NewReader(cmd.String() + "\n")
 
 	_, err := reader.Seek(off, io.SeekStart)
