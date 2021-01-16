@@ -6,7 +6,7 @@ import (
 
 var (
 	ErrNoCtl = errors.New("not a playctl command")
-	ErrNoVol = errors.New("not a vol command")
+	ErrNoVol = errors.New("not a playvol command")
 
 	ErrTooFewArgs  = errors.New("too few arguments supplied")
 	ErrTooManyArgs = errors.New("too many arguments supplied")

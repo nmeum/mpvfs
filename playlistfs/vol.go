@@ -22,7 +22,7 @@ func VolCmd(buf []byte) (*Volume, error) {
 			data := field[i]
 			switch i {
 			case 0:
-				if data != "vol" {
+				if data != "volume" {
 					return nil, ErrNoVol
 				}
 			default:
@@ -44,7 +44,7 @@ func VolCmd(buf []byte) (*Volume, error) {
 func (v *Volume) String() string {
 	numLvls := len(v.Levels)
 	if numLvls == 1 {
-		return fmt.Sprintf("vol %d", v.Levels[0])
+		return fmt.Sprintf("volume %d", v.Levels[0])
 	}
 
 	var lvlSet string
@@ -55,5 +55,5 @@ func (v *Volume) String() string {
 		}
 	}
 
-	return fmt.Sprintf("vol \"%s\"", lvlSet)
+	return fmt.Sprintf("volume \"%s\"", lvlSet)
 }
