@@ -26,13 +26,19 @@ func usage() {
 	os.Exit(2)
 }
 
-func startServer(mpvClient *mpv.Client) {
-	listener, err := net.Listen("tcp", *addr)
-	if err != nil {
-		log.Fatal(err)
+func handleError(pc <-chan error, sc <-chan error) {
+	for {
+		select {
+		case perr := <-pc:
+			log.Println("[player error]", perr)
+		case serr := <-sc:
+			log.Println("[state error]", serr)
+		}
 	}
+}
 
-	state, err := newPlayerState(mpvClient)
+func startServer(mpvClient *mpv.Client, state *playerState) {
+	listener, err := net.Listen("tcp", *addr)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -74,10 +80,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	go func(ch <-chan error) {
-		err := <-ch
-		log.Println(err)
-	}(mpvClient.ErrChan)
+	state, err := newPlayerState(mpvClient)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	startServer(mpvClient)
+	go handleError(mpvClient.ErrChan, state.ErrChan())
+	startServer(mpvClient, state)
 }
