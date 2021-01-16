@@ -68,7 +68,9 @@ func (p *playerState) updateVolume(ch <-chan interface{}) {
 func (p *playerState) updatePlaylist(ch <-chan interface{}) {
 	for data := range ch {
 		newCount := int(data.(float64))
-		// TODO: handle -1 case
+		if newCount < 0 {
+			panic("unreachable")
+		}
 
 		p.mtx.Lock()
 		entry, err := p.song(newCount - 1)
