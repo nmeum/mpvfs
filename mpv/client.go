@@ -117,10 +117,6 @@ func (c *Client) newReq(name interface{}, args ...interface{}) *request {
 
 func (c *Client) ExecCmd(name string, args ...interface{}) (interface{}, error) {
 	req := c.newReq(name, args...)
-	err := req.Encode(c.conn)
-	if err != nil {
-		return nil, err
-	}
 
 	ch := make(chan response)
 	defer close(ch)
@@ -129,6 +125,11 @@ func (c *Client) ExecCmd(name string, args ...interface{}) (interface{}, error) 
 	c.respMap[req.ID] = ch
 	defer delete(c.respMap, req.ID)
 	c.respMtx.Unlock()
+
+	err := req.Encode(c.conn)
+	if err != nil {
+		return nil, err
+	}
 
 	// Every message must be terminated with \n.
 	_, err = c.conn.Write([]byte("\n"))
