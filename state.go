@@ -97,14 +97,6 @@ func (p *playerState) song(idx int) (string, error) {
 	return fmt.Sprintf("%s \"%s\"", name, title), nil
 }
 
-func (p *playerState) IsPaused() bool {
-	p.mtx.Lock()
-	r := p.status == paused
-	p.mtx.Unlock()
-
-	return r
-}
-
 func (p *playerState) IsPlaying() bool {
 	p.mtx.Lock()
 	r := p.status == playing

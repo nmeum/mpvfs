@@ -17,10 +17,8 @@ func (c playctl) Read(off int64, p []byte) (int, error) {
 	var name string
 	if c.state.IsPlaying() {
 		name = "play"
-	} else if c.state.IsPaused() {
-		name = "pause"
 	} else {
-		panic("unreachable")
+		name = "pause"
 	}
 
 	cmd := playlistfs.Control{Name: name, Arg: c.state.Index()}
