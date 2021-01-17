@@ -44,7 +44,8 @@ func (c playctl) Write(off int64, p []byte) (int, error) {
 		return 0, err
 	}
 
-	if c.state.Index() != int(cmd.Arg) {
+	idx := c.state.Index()
+	if idx < 0 || uint(idx) != cmd.Arg {
 		err := c.mpv.SetProperty("playlist-pos", cmd.Arg)
 		if err != nil {
 			return 0, err
