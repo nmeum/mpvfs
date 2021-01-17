@@ -178,8 +178,9 @@ func (c *Client) GetProperty(name string) (interface{}, error) {
 }
 
 func (c *Client) ObserveProperty(name string) (<-chan interface{}, error) {
-	c.propMtx.Lock()
 	ch := make(chan interface{})
+
+	c.propMtx.Lock()
 	id := c.propID
 	c.propChans[id] = ch
 
