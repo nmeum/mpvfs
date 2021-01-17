@@ -143,8 +143,14 @@ func (c *Client) ExecCmd(name string, args ...interface{}) (interface{}, error) 
 
 	c.respMtx.Lock()
 	c.respMap[req.ID] = ch
-	defer delete(c.respMap, req.ID)
 	c.respMtx.Unlock()
+
+	// Delete request from respMap on return
+	defer func() {
+		c.respMtx.Lock()
+		delete(c.respMap, req.ID)
+		c.respMtx.Unlock()
+	}()
 
 	// Write request to socket through sendLoop
 	c.reqChan <- req
