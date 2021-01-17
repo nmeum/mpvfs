@@ -22,6 +22,7 @@ type Client struct {
 	propChans map[int32]chan interface{}
 
 	conn    net.Conn
+	reqChan chan request
 	msgChan chan response
 
 	ErrChan <-chan error
@@ -41,16 +42,35 @@ func NewClient(path string) (*Client, error) {
 		propMtx:   new(sync.Mutex),
 		propChans: make(map[int32]chan interface{}),
 		conn:      conn,
-		msgChan:   make(chan response, 5),
+		reqChan:   make(chan request),
+		msgChan:   make(chan response),
 	}
 
-	errChan := make(chan error, 1)
+	errChan := make(chan error, 5)
 	c.ErrChan = errChan
 
+	go c.sendLoop(c.reqChan, errChan)
 	go c.recvLoop(c.msgChan, errChan)
-	go c.dispatchLoop(c.msgChan)
 
+	go c.dispatchLoop(c.msgChan)
 	return c, nil
+}
+
+func (c *Client) sendLoop(ch <-chan request, errCh chan<- error) {
+	for req := range ch {
+		err := req.Encode(c.conn)
+		if err != nil {
+			errCh <- err
+			continue
+		}
+
+		// Every message must be terminated with \n.
+		_, err = c.conn.Write([]byte("\n"))
+		if err != nil {
+			errCh <- err
+			continue
+		}
+	}
 }
 
 func (c *Client) recvLoop(ch chan<- response, errCh chan<- error) {
@@ -106,13 +126,13 @@ func (c *Client) handleChange(msg response) {
 	}
 }
 
-func (c *Client) newReq(name interface{}, args ...interface{}) *request {
+func (c *Client) newReq(name interface{}, args ...interface{}) request {
 	argv := append([]interface{}{name}, args...)
 
 	// Signed integer overflow is well-defined in go.
 	id := atomic.AddInt32(&c.msgID, 1)
 
-	return &request{Cmd: argv, ID: id}
+	return request{Cmd: argv, ID: id}
 }
 
 func (c *Client) ExecCmd(name string, args ...interface{}) (interface{}, error) {
@@ -126,16 +146,8 @@ func (c *Client) ExecCmd(name string, args ...interface{}) (interface{}, error) 
 	defer delete(c.respMap, req.ID)
 	c.respMtx.Unlock()
 
-	err := req.Encode(c.conn)
-	if err != nil {
-		return nil, err
-	}
-
-	// Every message must be terminated with \n.
-	_, err = c.conn.Write([]byte("\n"))
-	if err != nil {
-		return nil, err
-	}
+	// Write request to socket through sendLoop
+	c.reqChan <- req
 
 	resp := <-ch
 	if resp.Error != noError {
