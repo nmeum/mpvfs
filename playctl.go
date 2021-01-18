@@ -26,9 +26,8 @@ func (c playctl) Read(off int64, p []byte) (int, error) {
 	if pos < 0 {
 		return 0, errors.New("no current playlist")
 	}
-	upos := uint(pos)
 
-	cmd := playlistfs.Control{Name: name, Arg: &upos}
+	cmd := playlistfs.Control{Name: name, Arg: &pos}
 	reader := strings.NewReader(cmd.String() + "\n")
 
 	_, err := reader.Seek(off, io.SeekStart)
@@ -59,14 +58,14 @@ func (c playctl) Write(off int64, p []byte) (int, error) {
 			return 0, err
 		}
 	case "skip":
-		var inc uint
+		var inc int
 		if cmd.Arg == nil {
 			inc = 1
 		}
 
 		idx := c.state.Index()
 		if idx > 0 {
-			inc += uint(idx)
+			inc += idx
 		}
 
 		cmd.Arg = &inc

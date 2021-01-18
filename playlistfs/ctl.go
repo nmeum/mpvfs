@@ -7,7 +7,7 @@ import (
 
 type Control struct {
 	Name string
-	Arg  *uint
+	Arg  *int
 }
 
 func CtlCmd(buf []byte) (*Control, error) {
@@ -25,13 +25,11 @@ func CtlCmd(buf []byte) (*Control, error) {
 			case 0:
 				cmd.Name = data
 			case 1:
-				arg, err := strconv.ParseUint(data, 10, 32)
+				arg, err := strconv.Atoi(data)
 				if err != nil {
 					return nil, err
 				}
-
-				uarg := uint(arg)
-				cmd.Arg = &uarg
+				cmd.Arg = &arg
 			}
 		}
 	}
