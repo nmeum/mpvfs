@@ -73,6 +73,7 @@ func (p *playerState) updatePosition(ch <-chan interface{}) {
 	}
 }
 
+// XXX: This implementation assumes that the playlist is never cleared.
 func (p *playerState) updatePlaylist(ch <-chan interface{}) {
 	for data := range ch {
 		newCount := int(data.(float64))
@@ -81,13 +82,17 @@ func (p *playerState) updatePlaylist(ch <-chan interface{}) {
 		}
 
 		p.mtx.Lock()
-		entry, err := p.song(newCount - 1)
-		if err != nil {
-			p.mtx.Unlock()
-			p.errChan <- err
-			continue
+		oldCount := len(p.playlist)
+		diff := newCount - oldCount
+
+		for i := 0; i < diff; i++ {
+			entry, err := p.song(oldCount + i)
+			if err != nil {
+				p.errChan <- err
+				continue
+			}
+			p.playlist = append(p.playlist, entry)
 		}
-		p.playlist = append(p.playlist, entry)
 		p.mtx.Unlock()
 	}
 }
