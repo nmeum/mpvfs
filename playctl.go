@@ -9,6 +9,8 @@ import (
 	"strings"
 )
 
+var ErrEmptyPlaylist = errors.New("playlist is empty")
+
 type playctl struct {
 	state *playerState
 	mpv   *mpv.Client
@@ -24,7 +26,7 @@ func (c playctl) Read(off int64, p []byte) (int, error) {
 
 	pos := c.state.Index()
 	if pos < 0 {
-		return 0, errors.New("no current playlist")
+		return 0, ErrEmptyPlaylist
 	}
 
 	cmd := playlistfs.Control{Name: name, Arg: &pos}
@@ -59,25 +61,28 @@ func (c playctl) Write(off int64, p []byte) (int, error) {
 		}
 	case "skip":
 		var inc int
-		if cmd.Arg == nil {
+		if cmd.Arg != nil {
+			inc = *cmd.Arg
+		} else {
 			inc = 1
 		}
 
 		idx := c.state.Index()
-		if idx > 0 {
-			inc += idx
+		if idx < 0 {
+			return 0, ErrEmptyPlaylist
 		}
 
-		cmd.Arg = &inc
+		// TODO: Handle skip beyond playlist size
+		newArg := idx + inc
+		cmd.Arg = &newArg
+
 		fallthrough
 	case "play":
-		if cmd.Arg == nil {
-			break // Ignore
-		}
-
-		err := c.mpv.SetProperty("playlist-pos", *cmd.Arg)
-		if err != nil {
-			return 0, err
+		if cmd.Arg != nil {
+			err := c.mpv.SetProperty("playlist-pos", *cmd.Arg)
+			if err != nil {
+				return 0, err
+			}
 		}
 
 		fallthrough
