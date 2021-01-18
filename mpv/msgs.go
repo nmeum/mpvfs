@@ -33,3 +33,14 @@ func (r *request) Encode(w io.Writer) error {
 
 	return nil
 }
+
+func (r *request) String() string {
+	data, err := json.Marshal(r)
+	if err != nil {
+		// This function is primarly intended for debugging
+		// purposes and therefore panics on error.
+		panic(err)
+	}
+
+	return string(data)
+}

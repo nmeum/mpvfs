@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"errors"
-	"fmt"
+	"log"
 	"math"
 	"net"
 	"sync"
@@ -25,6 +25,7 @@ type Client struct {
 	reqChan chan request
 	msgChan chan response
 
+	Debug   bool
 	ErrChan <-chan error
 }
 
@@ -77,7 +78,7 @@ func (c *Client) recvLoop(ch chan<- response, errCh chan<- error) {
 	scanner := bufio.NewScanner(c.conn)
 	for scanner.Scan() {
 		data := scanner.Bytes()
-		fmt.Println("data:", string(data))
+		c.debug("<-", string(data))
 
 		var msg response
 		err := json.Unmarshal(data, &msg)
@@ -126,6 +127,14 @@ func (c *Client) handleChange(msg response) {
 	}
 }
 
+func (c *Client) debug(args ...interface{}) {
+	const prefix = "[mpv client]"
+	if c.Debug {
+		argv := append([]interface{}{prefix}, args...)
+		log.Println(argv...)
+	}
+}
+
 func (c *Client) newReq(name interface{}, args ...interface{}) request {
 	argv := append([]interface{}{name}, args...)
 
@@ -152,7 +161,7 @@ func (c *Client) ExecCmd(name string, args ...interface{}) (interface{}, error) 
 		c.respMtx.Unlock()
 	}()
 
-	// Write request to socket through sendLoop
+	c.debug("->", req.String())
 	c.reqChan <- req
 
 	resp := <-ch
