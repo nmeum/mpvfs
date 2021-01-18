@@ -45,14 +45,6 @@ func (c playctl) Write(off int64, p []byte) (int, error) {
 		return 0, err
 	}
 
-	idx := c.state.Index()
-	if cmd.Arg != nil && (idx < 0 || uint(idx) != *cmd.Arg) {
-		err := c.mpv.SetProperty("playlist-pos", *cmd.Arg)
-		if err != nil {
-			return 0, err
-		}
-	}
-
 	switch cmd.Name {
 	case "stop":
 		err := c.mpv.SetProperty("playlist-pos", 0)
@@ -66,7 +58,31 @@ func (c playctl) Write(off int64, p []byte) (int, error) {
 		if err != nil {
 			return 0, err
 		}
+	case "skip":
+		var inc uint
+		if cmd.Arg == nil {
+			inc = 1
+		}
+
+		idx := c.state.Index()
+		if idx > 0 {
+			inc += uint(idx)
+		}
+
+		cmd.Arg = &inc
+		fallthrough
 	case "play":
+		if cmd.Arg == nil {
+			break // Ignore
+		}
+
+		err := c.mpv.SetProperty("playlist-pos", *cmd.Arg)
+		if err != nil {
+			return 0, err
+		}
+
+		fallthrough
+	case "resume":
 		err := c.mpv.SetProperty("pause", false)
 		if err != nil {
 			return 0, err
