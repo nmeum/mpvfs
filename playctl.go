@@ -26,8 +26,9 @@ func (c playctl) Read(off int64, p []byte) (int, error) {
 	if pos < 0 {
 		return 0, errors.New("no current playlist")
 	}
+	upos := uint(pos)
 
-	cmd := playlistfs.Control{Name: name, Arg: uint(pos)}
+	cmd := playlistfs.Control{Name: name, Arg: &upos}
 	reader := strings.NewReader(cmd.String() + "\n")
 
 	_, err := reader.Seek(off, io.SeekStart)
@@ -45,8 +46,8 @@ func (c playctl) Write(off int64, p []byte) (int, error) {
 	}
 
 	idx := c.state.Index()
-	if idx < 0 || uint(idx) != cmd.Arg {
-		err := c.mpv.SetProperty("playlist-pos", cmd.Arg)
+	if cmd.Arg != nil && (idx < 0 || uint(idx) != *cmd.Arg) {
+		err := c.mpv.SetProperty("playlist-pos", *cmd.Arg)
 		if err != nil {
 			return 0, err
 		}

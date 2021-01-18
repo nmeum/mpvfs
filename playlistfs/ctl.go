@@ -7,7 +7,7 @@ import (
 
 type Control struct {
 	Name string
-	Arg  uint
+	Arg  *uint
 }
 
 func CtlCmd(buf []byte) (*Control, error) {
@@ -29,7 +29,9 @@ func CtlCmd(buf []byte) (*Control, error) {
 				if err != nil {
 					return nil, err
 				}
-				cmd.Arg = uint(arg)
+
+				uarg := uint(arg)
+				cmd.Arg = &uarg
 			}
 		}
 	}
@@ -38,5 +40,5 @@ func CtlCmd(buf []byte) (*Control, error) {
 }
 
 func (c *Control) String() string {
-	return fmt.Sprintf("%s %d", c.Name, c.Arg)
+	return fmt.Sprintf("%s %d", c.Name, *c.Arg)
 }
