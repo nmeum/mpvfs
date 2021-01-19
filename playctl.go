@@ -72,7 +72,6 @@ func (c playctl) Write(off int64, p []byte) (int, error) {
 			inc = 1 // Start from beginning
 		}
 
-		// TODO: Handle skip beyond playlist size
 		newArg := idx + inc
 		cmd.Arg = &newArg
 
