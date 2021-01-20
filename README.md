@@ -19,7 +19,7 @@ Install using `go get` as follows:
 This software relies on mpv's IPC mechanism. Currently, mpv must be
 started separately. For instance, as:
 
-	$ mpv --keep-open=yes --pause --input-ipc-server=/tmp/mpv-socket song.flac
+	$ mpv --keep-open=yes --idle --pause --input-ipc-server=/tmp/mpv-socket song.flac
 
 Afterwards, mpvfs itself must be started as:
 
