@@ -40,7 +40,7 @@ Linux Kernel version, you can mount the file server as follows:
 
 Afterwards, you can interact with the `playctl`, `playvol`, and
 `playlist` files provided at the given mount point. For instance,
-`echo play > /media/9p/playctl` will start playback. Refer to the
+`echo play >> /media/9p/playctl` will start playback. Refer to the
 [playlistfs manual][9front playlistfs] for more information on the
 provided files.
 
