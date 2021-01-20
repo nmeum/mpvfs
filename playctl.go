@@ -18,16 +18,16 @@ type playctl struct {
 
 func (c playctl) Read(off int64, p []byte) (int, error) {
 	var name string
-	if c.state.IsPlaying() {
+	if c.state.Index() == -1 {
+		name = "stop"
+	} else if c.state.IsPlaying() {
 		name = "play"
 	} else {
 		name = "pause"
 	}
 
+	// XXX: This will set position to -1 on stop
 	pos := c.state.Index()
-	if pos < 0 {
-		return 0, ErrEmptyPlaylist
-	}
 
 	cmd := playlistfs.Control{Name: name, Arg: &pos}
 	reader := strings.NewReader(cmd.String() + "\n")
@@ -48,7 +48,7 @@ func (c playctl) Write(off int64, p []byte) (int, error) {
 
 	switch cmd.Name {
 	case "stop":
-		err := c.mpv.SetProperty("playlist-pos", 0)
+		err := c.mpv.SetProperty("playlist-pos", -1)
 		if err != nil {
 			return 0, err
 		}
@@ -68,8 +68,8 @@ func (c playctl) Write(off int64, p []byte) (int, error) {
 		}
 
 		idx := c.state.Index()
-		if idx < 0 {
-			return 0, ErrEmptyPlaylist
+		if idx == -1 {
+			inc = 1 // Start from beginning
 		}
 
 		// TODO: Handle skip beyond playlist size
