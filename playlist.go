@@ -36,5 +36,8 @@ func (l playlist) Write(off int64, p []byte) (int, error) {
 		return 0, err
 	}
 
+	// TODO: Somehow make sure that mpv/mpvfs stores the description
+	// and returns it on read again.
+
 	return len(p), nil
 }
