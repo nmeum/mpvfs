@@ -112,7 +112,7 @@ func (p *playerState) song(idx int) (string, error) {
 	}
 
 	// TODO: What if the title contains single qoutes?
-	return fmt.Sprintf("%s '%s'", name, title), nil
+	return fmt.Sprintf("%s %s", name, title), nil
 }
 
 func (p *playerState) IsPlaying() bool {
