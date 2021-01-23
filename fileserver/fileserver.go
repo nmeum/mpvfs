@@ -115,6 +115,11 @@ func (f *FileServer) Open(ctx context.Context, msg message.TOpen) (message.ROpen
 		return message.ROpen{}, errors.New(message.UnknownFidErrorString)
 	}
 
+	err := pair.file.Open(msg.Mode)
+	if err != nil {
+		return message.ROpen{}, err
+	}
+
 	return message.ROpen{Qid: pair.stat.Qid}, nil
 }
 
