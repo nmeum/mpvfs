@@ -111,7 +111,7 @@ func (p *playerState) song(idx int) (string, error) {
 		return name.(string), nil
 	}
 
-	return fmt.Sprintf("%s \"%s\"", name, title), nil
+	return fmt.Sprintf("%s '%s'", name, title), nil
 }
 
 func (p *playerState) IsPlaying() bool {

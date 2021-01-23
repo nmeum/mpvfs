@@ -55,5 +55,5 @@ func (v *Volume) String() string {
 		}
 	}
 
-	return fmt.Sprintf("volume \"%s\"", lvlSet)
+	return fmt.Sprintf("volume '%s'", lvlSet)
 }
