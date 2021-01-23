@@ -14,7 +14,18 @@ type playlist struct {
 	mpv   *mpv.Client
 }
 
-func (l playlist) Open(message.OpenMode) error {
+func (l playlist) Open(mode message.OpenMode) error {
+	if (mode != message.Trunc) {
+		return nil
+	}
+
+	_, err := l.mpv.ExecCmd("playlist-clear")
+	if err != nil {
+		return err
+	}
+
+	// TODO: Make sure next read returns Epast
+
 	return nil
 }
 
