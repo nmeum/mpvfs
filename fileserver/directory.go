@@ -1,6 +1,7 @@
 package fileserver
 
 import (
+	"go.rbn.im/neinp/message"
 	"go.rbn.im/neinp/stat"
 
 	"io"
@@ -10,6 +11,10 @@ import (
 type directory struct {
 	stat     stat.Stat
 	children []stat.Stat
+}
+
+func (d directory) Open(message.OpenMode) error {
+	return nil
 }
 
 func (d directory) Read(off int64, p []byte) (int, error) {

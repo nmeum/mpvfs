@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/nmeum/mpvfs/mpv"
 	"github.com/nmeum/mpvfs/playlistfs"
+	"go.rbn.im/neinp/message"
 
 	"errors"
 	"io"
@@ -14,6 +15,10 @@ var ErrEmptyPlaylist = errors.New("playlist is empty")
 type playctl struct {
 	state *playerState
 	mpv   *mpv.Client
+}
+
+func (c playctl) Open(message.OpenMode) error {
+	return nil
 }
 
 func (c playctl) Read(off int64, p []byte) (int, error) {

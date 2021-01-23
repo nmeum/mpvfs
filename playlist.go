@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/nmeum/mpvfs/mpv"
 	"github.com/nmeum/mpvfs/playlistfs"
+	"go.rbn.im/neinp/message"
 
 	"io"
 	"strings"
@@ -11,6 +12,10 @@ import (
 type playlist struct {
 	state *playerState
 	mpv   *mpv.Client
+}
+
+func (l playlist) Open(message.OpenMode) error {
+	return nil
 }
 
 func (l playlist) Read(off int64, p []byte) (int, error) {

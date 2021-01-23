@@ -13,6 +13,7 @@ import (
 )
 
 type File interface {
+	Open(message.OpenMode) error
 	Read(int64, []byte) (int, error)
 	Write(int64, []byte) (int, error)
 }
