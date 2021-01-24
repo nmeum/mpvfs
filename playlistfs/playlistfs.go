@@ -5,9 +5,9 @@ import (
 )
 
 type Config struct {
-	Playctl  fileserver.File
-	Playlist fileserver.File
-	Playvol  fileserver.File
+	Playctl  fileserver.Cons
+	Playlist fileserver.Cons
+	Playvol  fileserver.Cons
 }
 
 func NewPlaylistFS(c Config) *fileserver.FileServer {

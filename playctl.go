@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/nmeum/mpvfs/fileserver"
 	"github.com/nmeum/mpvfs/mpv"
 	"github.com/nmeum/mpvfs/playlistfs"
 
@@ -16,7 +17,11 @@ type playctl struct {
 	mpv   *mpv.Client
 }
 
-func (c playctl) Read(off int64, p []byte) (int, error) {
+func newCtl() (fileserver.File, error) {
+	return &playctl{state, mpvClient}, nil
+}
+
+func (c *playctl) Read(off int64, p []byte) (int, error) {
 	var name string
 	if c.state.Index() == -1 {
 		name = "stop"
@@ -40,7 +45,7 @@ func (c playctl) Read(off int64, p []byte) (int, error) {
 	return reader.Read(p)
 }
 
-func (c playctl) Write(off int64, p []byte) (int, error) {
+func (c *playctl) Write(off int64, p []byte) (int, error) {
 	cmd, err := playlistfs.CtlCmd(p)
 	if err != nil {
 		return 0, err

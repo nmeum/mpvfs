@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/nmeum/mpvfs/fileserver"
 	"github.com/nmeum/mpvfs/mpv"
 	"github.com/nmeum/mpvfs/playlistfs"
 
@@ -13,7 +14,11 @@ type playlist struct {
 	mpv   *mpv.Client
 }
 
-func (l playlist) Read(off int64, p []byte) (int, error) {
+func newPlaylist() (fileserver.File, error) {
+	return &playlist{state, mpvClient}, nil
+}
+
+func (l *playlist) Read(off int64, p []byte) (int, error) {
 	playlist := strings.Join(l.state.Playlist(), "\n")
 	reader := strings.NewReader(playlist + "\n")
 
@@ -25,7 +30,7 @@ func (l playlist) Read(off int64, p []byte) (int, error) {
 	return reader.Read(p)
 }
 
-func (l playlist) Write(off int64, p []byte) (int, error) {
+func (l *playlist) Write(off int64, p []byte) (int, error) {
 	entry, err := playlistfs.PlaylistCmd(p)
 	if err != nil {
 		return 0, err

@@ -14,6 +14,11 @@ import (
 )
 
 var (
+	state     *playerState
+	mpvClient *mpv.Client
+)
+
+var (
 	verbose = flag.Bool("v", false, "verbose output for debugging")
 	addr    = flag.String("a", "localhost:9999", "address to listen on")
 )
@@ -45,9 +50,9 @@ func startServer(mpvClient *mpv.Client, state *playerState) {
 	}
 
 	config := playlistfs.Config{
-		playctl{state, mpvClient},
-		playlist{state, mpvClient},
-		playvol{state, mpvClient},
+		newCtl,
+		newPlaylist,
+		newVol,
 	}
 
 	fs := playlistfs.NewPlaylistFS(config)
@@ -77,11 +82,12 @@ func main() {
 	}
 	socketFp := flag.Arg(0)
 
-	mpvClient, err := mpv.NewClient(socketFp)
+	var err error
+	mpvClient, err = mpv.NewClient(socketFp)
 	if err != nil {
 		log.Fatal(err)
 	}
-	state, err := newPlayerState(mpvClient)
+	state, err = newPlayerState(mpvClient)
 	if err != nil {
 		log.Fatal(err)
 	}
