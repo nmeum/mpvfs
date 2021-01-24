@@ -45,9 +45,9 @@ func startServer(mpvClient *mpv.Client, state *playerState) {
 	}
 
 	config := playlistfs.Config{
-		playctl{state, mpvClient},
-		playlist{state, mpvClient},
-		playvol{state, mpvClient},
+		&playctl{state: state, mpv: mpvClient},
+		&playlist{state: state, mpv: mpvClient},
+		&playvol{eofAt: -1, state: state, mpv: mpvClient},
 	}
 
 	fs := playlistfs.NewPlaylistFS(config)
