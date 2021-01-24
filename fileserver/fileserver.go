@@ -126,7 +126,9 @@ func (f *FileServer) Read(ctx context.Context, msg message.TRead) (message.RRead
 	// TODO: Sanity check count
 	buf := make([]byte, msg.Count)
 	n, err := pair.file.Read(int64(msg.Offset), buf)
-	if err != nil && err != io.EOF {
+	if err == io.EOF {
+		return message.RRead{Count: 0}, nil
+	} else if err != nil {
 		return message.RRead{}, err
 	}
 
