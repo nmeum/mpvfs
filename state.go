@@ -12,8 +12,10 @@ type playerState struct {
 	mpv *mpv.Client
 	mtx *sync.Mutex
 
+	volume  uint
+	volCond *sync.Cond
+
 	pos      int32
-	volume   uint32
 	playing  bool
 	playlist []string
 
@@ -25,6 +27,7 @@ func newPlayerState(mpv *mpv.Client) (*playerState, error) {
 		pos:     -1,
 		mpv:     mpv,
 		mtx:     new(sync.Mutex),
+		volCond: sync.NewCond(new(sync.Mutex)),
 		errChan: make(chan error, 1),
 	}
 
@@ -62,7 +65,11 @@ func (p *playerState) updateState(ch <-chan interface{}) {
 func (p *playerState) updateVolume(ch <-chan interface{}) {
 	for data := range ch {
 		vol := data.(float64)
-		atomic.StoreUint32(&p.volume, uint32(vol))
+
+		p.volCond.L.Lock()
+		p.volume = uint(vol)
+		p.volCond.Broadcast()
+		p.volCond.L.Unlock()
 	}
 }
 
@@ -124,8 +131,25 @@ func (p *playerState) IsPlaying() bool {
 }
 
 func (p *playerState) Volume() uint {
-	vol := atomic.LoadUint32(&p.volume)
-	return uint(vol)
+	p.volCond.L.Lock()
+	vol := p.volume
+	p.volCond.L.Unlock()
+
+	return vol
+}
+
+func (p *playerState) WaitVolume() uint {
+	p.volCond.L.Lock()
+	oldvol := p.volume
+	// TODO: What happens when `echo ${oldvol} >> playvol`?
+	for oldvol == p.volume {
+		p.volCond.Wait()
+	}
+
+	vol := p.volume
+	p.volCond.L.Unlock()
+
+	return vol
 }
 
 func (p *playerState) Playlist() []string {
