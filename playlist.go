@@ -5,29 +5,31 @@ import (
 	"github.com/nmeum/mpvfs/mpv"
 	"github.com/nmeum/mpvfs/playlistfs"
 
-	"io"
 	"strings"
 )
 
 type playlist struct {
+	*blockFile
+
 	state *playerState
 	mpv   *mpv.Client
 }
 
 func newPlaylist() (fileserver.File, error) {
-	return &playlist{state, mpvClient}, nil
+	p := &playlist{state: state, mpv: mpvClient}
+	p.blockFile = newBlockFile(p.getReader)
+	return p, nil
 }
 
-func (l *playlist) Read(off int64, p []byte) (int, error) {
-	playlist := strings.Join(l.state.Playlist(), "\n")
-	reader := strings.NewReader(playlist + "\n")
-
-	_, err := reader.Seek(off, io.SeekStart)
-	if err != nil {
-		return 0, io.EOF
+func (l *playlist) getReader(block bool) *strings.Reader {
+	var out string
+	if block {
+		out = l.state.WaitPlayist()
+	} else {
+		out = strings.Join(l.state.Playlist(), "\n")
 	}
 
-	return reader.Read(p)
+	return strings.NewReader(out + "\n")
 }
 
 func (l *playlist) Write(off int64, p []byte) (int, error) {
