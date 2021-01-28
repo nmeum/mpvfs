@@ -15,20 +15,23 @@ type playerState struct {
 	volume  uint
 	volCond *sync.Cond
 
-	pos      int32
-	playing  bool
 	playlist []string
+	playCond *sync.Cond
+
+	pos     int32
+	playing bool
 
 	errChan chan error
 }
 
 func newPlayerState(mpv *mpv.Client) (*playerState, error) {
 	state := &playerState{
-		pos:     -1,
-		mpv:     mpv,
-		mtx:     new(sync.Mutex),
-		volCond: sync.NewCond(new(sync.Mutex)),
-		errChan: make(chan error, 1),
+		pos:      -1,
+		mpv:      mpv,
+		mtx:      new(sync.Mutex),
+		volCond:  sync.NewCond(new(sync.Mutex)),
+		playCond: sync.NewCond(new(sync.Mutex)),
+		errChan:  make(chan error, 1),
 	}
 
 	observers := map[string]func(ch <-chan interface{}){
@@ -88,7 +91,7 @@ func (p *playerState) updatePlaylist(ch <-chan interface{}) {
 			panic("unreachable")
 		}
 
-		p.mtx.Lock()
+		p.playCond.L.Lock()
 		oldCount := len(p.playlist)
 		diff := newCount - oldCount
 
@@ -100,7 +103,9 @@ func (p *playerState) updatePlaylist(ch <-chan interface{}) {
 			}
 			p.playlist = append(p.playlist, entry)
 		}
-		p.mtx.Unlock()
+
+		p.playCond.Broadcast()
+		p.playCond.L.Unlock()
 	}
 }
 
@@ -153,9 +158,25 @@ func (p *playerState) WaitVolume() uint {
 }
 
 func (p *playerState) Playlist() []string {
-	p.mtx.Lock()
+	p.playCond.L.Lock()
 	r := p.playlist
-	p.mtx.Unlock()
+	p.playCond.L.Unlock()
+
+	return r
+}
+
+// WaitPlayist blocks until the playlist changes and returns the
+// most recent entry added to the playlist.
+func (p *playerState) WaitPlayist() string {
+	oldlen := len(p.playlist)
+	p.playCond.L.Lock()
+	for len(p.playlist) <= oldlen {
+		p.playCond.Wait()
+	}
+
+	newIndex := len(p.playlist) - 1
+	r := p.playlist[newIndex]
+	p.playCond.L.Unlock()
 
 	return r
 }
