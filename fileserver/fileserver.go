@@ -7,6 +7,7 @@ import (
 	"go.rbn.im/neinp/qid"
 	"go.rbn.im/neinp/stat"
 
+	"sync"
 	"context"
 	"errors"
 	"io"
@@ -27,7 +28,7 @@ type FileServer struct {
 	fids *fid.Map
 
 	stat map[string]*stat.Stat
-	open map[fid.Fid]File
+	open *sync.Map // fid.Fid → File
 	cons FileMap
 }
 
@@ -39,7 +40,7 @@ const version = "9P2000"
 func NewFileServer(files FileMap) *FileServer {
 	fs := &FileServer{
 		stat: make(map[string]*stat.Stat),
-		open: make(map[fid.Fid]File),
+		open: new(sync.Map),
 		cons: files,
 		fids: fid.New(),
 	}
@@ -59,7 +60,7 @@ func NewFileServer(files FileMap) *FileServer {
 	return fs
 }
 
-func (f *FileServer) Version(ctx context.Context, msg message.TVersion) (message.RVersion, error) {
+func (s *FileServer) Version(ctx context.Context, msg message.TVersion) (message.RVersion, error) {
 	if msg.Version != version {
 		return message.RVersion{}, errors.New(message.BotchErrorString)
 	}
@@ -68,15 +69,15 @@ func (f *FileServer) Version(ctx context.Context, msg message.TVersion) (message
 	return message.RVersion{Version: version, Msize: msg.Msize}, nil
 }
 
-func (f *FileServer) Attach(ctx context.Context, msg message.TAttach) (message.RAttach, error) {
-	stat := f.stat["/"]
+func (s *FileServer) Attach(ctx context.Context, msg message.TAttach) (message.RAttach, error) {
+	stat := s.stat["/"]
 
-	f.fids.Set(msg.Fid, stat)
+	s.fids.Set(msg.Fid, stat)
 	return message.RAttach{Qid: stat.Qid}, nil
 }
 
-func (f *FileServer) Stat(ctx context.Context, msg message.TStat) (message.RStat, error) {
-	stat, ok := f.fids.Get(msg.Fid).(*stat.Stat)
+func (s *FileServer) Stat(ctx context.Context, msg message.TStat) (message.RStat, error) {
+	stat, ok := s.fids.Get(msg.Fid).(*stat.Stat)
 	if !ok {
 		return message.RStat{}, errors.New(message.NoStatErrorString)
 	}
@@ -84,8 +85,8 @@ func (f *FileServer) Stat(ctx context.Context, msg message.TStat) (message.RStat
 	return message.RStat{Stat: *stat}, nil
 }
 
-func (f *FileServer) Walk(ctx context.Context, msg message.TWalk) (message.RWalk, error) {
-	stat, ok := f.fids.Get(msg.Fid).(*stat.Stat)
+func (s *FileServer) Walk(ctx context.Context, msg message.TWalk) (message.RWalk, error) {
+	stat, ok := s.fids.Get(msg.Fid).(*stat.Stat)
 	if !ok {
 		return message.RWalk{}, errors.New(message.UnknownFidErrorString)
 	} else if len(msg.Wname) > 1 {
@@ -95,17 +96,17 @@ func (f *FileServer) Walk(ctx context.Context, msg message.TWalk) (message.RWalk
 	newStat := stat
 	if len(msg.Wname) == 1 {
 		name := msg.Wname[0]
-		newStat, ok = f.stat[name]
+		newStat, ok = s.stat[name]
 		if !ok {
 			return message.RWalk{}, errors.New(message.NotFoundErrorString)
 		}
 	}
 
 	if msg.Newfid != msg.Fid {
-		if f.fids.Get(msg.Newfid) != nil {
+		if s.fids.Get(msg.Newfid) != nil {
 			return message.RWalk{}, errors.New(message.DupFidErrorString)
 		}
-		f.fids.Set(msg.Newfid, newStat)
+		s.fids.Set(msg.Newfid, newStat)
 	}
 
 	if len(msg.Wname) == 1 {
@@ -115,26 +116,27 @@ func (f *FileServer) Walk(ctx context.Context, msg message.TWalk) (message.RWalk
 	}
 }
 
-func (f *FileServer) Open(ctx context.Context, msg message.TOpen) (message.ROpen, error) {
-	stat, ok := f.fids.Get(msg.Fid).(*stat.Stat)
+func (s *FileServer) Open(ctx context.Context, msg message.TOpen) (message.ROpen, error) {
+	stat, ok := s.fids.Get(msg.Fid).(*stat.Stat)
 	if !ok {
 		return message.ROpen{}, errors.New(message.UnknownFidErrorString)
 	}
 
-	file, err := f.cons[stat.Name]()
+	file, err := s.cons[stat.Name]()
 	if err != nil {
 		return message.ROpen{}, err
 	}
 
-	f.open[msg.Fid] = file
+	s.open.Store(msg.Fid, file)
 	return message.ROpen{Qid: stat.Qid}, nil
 }
 
-func (f *FileServer) Read(ctx context.Context, msg message.TRead) (message.RRead, error) {
-	file, ok := f.open[msg.Fid]
+func (s *FileServer) Read(ctx context.Context, msg message.TRead) (message.RRead, error) {
+	f, ok := s.open.Load(msg.Fid)
 	if !ok {
 		return message.RRead{}, errors.New(message.UnknownFidErrorString)
 	}
+	file := f.(File)
 
 	// TODO: Sanity check count
 	buf := make([]byte, msg.Count)
@@ -148,11 +150,12 @@ func (f *FileServer) Read(ctx context.Context, msg message.TRead) (message.RRead
 	return message.RRead{Count: uint32(n), Data: buf[:n]}, nil
 }
 
-func (f *FileServer) Write(ctx context.Context, msg message.TWrite) (message.RWrite, error) {
-	file, ok := f.open[msg.Fid]
+func (s *FileServer) Write(ctx context.Context, msg message.TWrite) (message.RWrite, error) {
+	f, ok := s.open.Load(msg.Fid)
 	if !ok {
 		return message.RWrite{}, errors.New(message.UnknownFidErrorString)
 	}
+	file := f.(File)
 
 	n, err := file.Write(int64(msg.Offset), msg.Data)
 	if err != nil {
@@ -162,8 +165,8 @@ func (f *FileServer) Write(ctx context.Context, msg message.TWrite) (message.RWr
 	return message.RWrite{Count: uint32(n)}, nil
 }
 
-func (f *FileServer) Clunk(ctx context.Context, msg message.TClunk) (message.RClunk, error) {
-	f.fids.Delete(msg.Fid)
-	delete(f.open, msg.Fid)
+func (s *FileServer) Clunk(ctx context.Context, msg message.TClunk) (message.RClunk, error) {
+	s.fids.Delete(msg.Fid)
+	s.open.Delete(msg.Fid)
 	return message.RClunk{}, nil
 }
