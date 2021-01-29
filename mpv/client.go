@@ -25,11 +25,11 @@ type Client struct {
 	reqChan chan request
 	msgChan chan response
 
-	Debug   bool
+	verbose bool
 	ErrChan <-chan error
 }
 
-func NewClient(path string) (*Client, error) {
+func NewClient(path string, verbose bool) (*Client, error) {
 	conn, err := net.Dial("unix", path)
 	if err != nil {
 		return nil, err
@@ -45,6 +45,7 @@ func NewClient(path string) (*Client, error) {
 		conn:      conn,
 		reqChan:   make(chan request),
 		msgChan:   make(chan response),
+		verbose:   verbose,
 	}
 
 	errChan := make(chan error, 5)
@@ -129,7 +130,7 @@ func (c *Client) handleChange(msg response) {
 
 func (c *Client) debug(args ...interface{}) {
 	const prefix = "[mpv client]"
-	if c.Debug {
+	if c.verbose {
 		argv := append([]interface{}{prefix}, args...)
 		log.Println(argv...)
 	}

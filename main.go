@@ -83,7 +83,7 @@ func main() {
 	socketFp := flag.Arg(0)
 
 	var err error
-	mpvClient, err = mpv.NewClient(socketFp)
+	mpvClient, err = mpv.NewClient(socketFp, *verbose)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -91,9 +91,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	// Use mpv debug mode if verbose output was requested
-	mpvClient.Debug = *verbose
 
 	go handleError(mpvClient.ErrChan, state.ErrChan())
 	startServer(mpvClient, state)
