@@ -11,6 +11,10 @@ type RecvInput interface {
 	NextReader() *strings.Reader
 }
 
+// BlockRecv implements io.Reader on top of RecvInput. When the
+// implemented Read() returns io.EOF and the caller calls Read()
+// again the reader implemented by BlockRecv will block until
+// new data is available.
 type BlockRecv struct {
 	// Absolute offset at which (and beyond which) EOF will be returned.
 	// This member must be initalized with -1.
