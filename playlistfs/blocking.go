@@ -1,4 +1,4 @@
-package main
+package playlistfs
 
 import (
 	"errors"
@@ -6,9 +6,12 @@ import (
 	"strings"
 )
 
-type inFunc func(block bool) *strings.Reader
+type RecvInput interface {
+	CurrentReader() *strings.Reader
+	NextReader() *strings.Reader
+}
 
-type blockFile struct {
+type BlockRecv struct {
 	// Absolute offset at which (and beyond which) EOF will be returned.
 	// This member must be initalized with -1.
 	eofAt int64
@@ -20,21 +23,21 @@ type blockFile struct {
 	// Current string reader on which the read function operates.
 	reader *strings.Reader
 
-	newInput inFunc
+	in RecvInput
 }
 
-func newBlockFile(fn inFunc) *blockFile {
-	return &blockFile{eofAt: -1, newInput: fn}
+func NewBlockRecv(in RecvInput) *BlockRecv {
+	return &BlockRecv{eofAt: -1, in: in}
 }
 
-func (e *blockFile) Read(off int64, p []byte) (int, error) {
+func (e *BlockRecv) Read(off int64, p []byte) (int, error) {
 	if e.reader == nil {
-		e.reader = e.newInput(false)
+		e.reader = e.in.CurrentReader()
 	} else if e.eofAt > 0 && off >= e.eofAt {
 		// We are reading beyond EOF for the second time.
 		// Block until new data is available and return it.
 		e.baseOff += e.reader.Size()
-		e.reader = e.newInput(true)
+		e.reader = e.in.NextReader()
 	} else if off < e.baseOff {
 		return 0, errors.New("invalid seek")
 	}

@@ -9,7 +9,7 @@ import (
 )
 
 type playvol struct {
-	*blockFile
+	*playlistfs.BlockRecv
 
 	state *playerState
 	mpv   *mpv.Client
@@ -17,19 +17,17 @@ type playvol struct {
 
 func newVol() (fileserver.File, error) {
 	p := &playvol{state: state, mpv: mpvClient}
-	p.blockFile = newBlockFile(p.getReader)
+	p.BlockRecv = playlistfs.NewBlockRecv(p)
 	return p, nil
 }
 
-func (c *playvol) getReader(block bool) *strings.Reader {
-	var vol uint
-	if block {
-		vol = c.state.WaitVolume()
-	} else {
-		vol = c.state.Volume()
-	}
+func (c *playvol) CurrentReader() *strings.Reader {
+	v := playlistfs.Volume{[]uint{c.state.Volume()}}
+	return strings.NewReader(v.String() + "\n")
+}
 
-	v := playlistfs.Volume{[]uint{vol}}
+func (c *playvol) NextReader() *strings.Reader {
+	v := playlistfs.Volume{[]uint{c.state.WaitVolume()}}
 	return strings.NewReader(v.String() + "\n")
 }
 
