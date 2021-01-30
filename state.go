@@ -5,12 +5,31 @@ import (
 
 	"fmt"
 	"sync"
-	"sync/atomic"
 )
+
+type Playback int
+
+const (
+	Playing Playback = iota
+	Paused
+	Stopped
+)
+
+func (p Playback) String() string {
+	switch p {
+	case Playing:
+		return "play"
+	case Paused:
+		return "pause"
+	case Stopped:
+		return "stop"
+	}
+
+	panic("unreachable")
+}
 
 type playerState struct {
 	mpv *mpv.Client
-	mtx *sync.Mutex
 
 	volume  uint
 	volCond *sync.Cond
@@ -18,20 +37,21 @@ type playerState struct {
 	playlist []string
 	playCond *sync.Cond
 
-	pos     int32
-	playing bool
+	stateCond *sync.Cond
+	playback  Playback
+	pos       int
 
 	errChan chan error
 }
 
 func newPlayerState(mpv *mpv.Client) (*playerState, error) {
 	state := &playerState{
-		pos:      -1,
-		mpv:      mpv,
-		mtx:      new(sync.Mutex),
-		volCond:  sync.NewCond(new(sync.Mutex)),
-		playCond: sync.NewCond(new(sync.Mutex)),
-		errChan:  make(chan error, 1),
+		pos:       -1,
+		mpv:       mpv,
+		volCond:   sync.NewCond(new(sync.Mutex)),
+		playCond:  sync.NewCond(new(sync.Mutex)),
+		stateCond: sync.NewCond(new(sync.Mutex)),
+		errChan:   make(chan error, 1),
 	}
 
 	observers := map[string]func(ch <-chan interface{}){
@@ -59,9 +79,16 @@ func (p *playerState) ErrChan() <-chan error {
 
 func (p *playerState) updateState(ch <-chan interface{}) {
 	for data := range ch {
-		p.mtx.Lock()
-		p.playing = !(data.(bool))
-		p.mtx.Unlock()
+		p.stateCond.L.Lock()
+		paused := data.(bool)
+		if paused {
+			p.playback = Paused
+		} else {
+			p.playback = Playing
+		}
+
+		p.stateCond.Broadcast()
+		p.stateCond.L.Unlock()
 	}
 }
 
@@ -78,8 +105,15 @@ func (p *playerState) updateVolume(ch <-chan interface{}) {
 
 func (p *playerState) updatePosition(ch <-chan interface{}) {
 	for data := range ch {
+		p.stateCond.L.Lock()
 		pos := data.(float64)
-		atomic.StoreInt32(&p.pos, int32(pos))
+		if pos == -1 {
+			p.playback = Stopped
+		}
+		p.pos = int(pos)
+
+		p.stateCond.Broadcast()
+		p.stateCond.L.Unlock()
 	}
 }
 
@@ -127,12 +161,32 @@ func (p *playerState) song(idx int) (string, error) {
 	return fmt.Sprintf("%s %s", name, title), nil
 }
 
-func (p *playerState) IsPlaying() bool {
-	p.mtx.Lock()
-	r := p.playing
-	p.mtx.Unlock()
+// State returns the current position in the playlist (or -1 if there is
+// no current entry) and the current playback state of the player.
+func (p *playerState) State() (int, Playback) {
+	p.stateCond.L.Lock()
+	state := p.playback
+	pos := p.pos
+	p.stateCond.L.Unlock()
 
-	return r
+	return pos, state
+}
+
+func (p *playerState) WaitState() (int, Playback) {
+	p.stateCond.L.Lock()
+	oldState := p.playback
+	oldPos := p.pos
+
+	// TODO: What happens when `echo ${curState} ${curPos} >> playctl`?
+	for oldState == p.playback && oldPos == p.pos {
+		p.stateCond.Wait()
+	}
+
+	newState := p.playback
+	newPos := p.pos
+	p.stateCond.L.Unlock()
+
+	return newPos, newState
 }
 
 func (p *playerState) Volume() uint {
@@ -179,11 +233,4 @@ func (p *playerState) WaitPlayist() string {
 	p.playCond.L.Unlock()
 
 	return r
-}
-
-// Index returns the current position on the playlist, or
-// -1 if there is no current entry (e.g. playlist is empty).
-func (p *playerState) Index() int {
-	pos := atomic.LoadInt32(&p.pos)
-	return int(pos)
 }

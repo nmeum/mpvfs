@@ -22,18 +22,19 @@ func newCtl() (fileserver.File, error) {
 }
 
 func (c *playctl) Read(off int64, p []byte) (int, error) {
+	pos, pback := c.state.State()
+
 	var name string
-	if c.state.Index() == -1 {
-		name = "stop"
-	} else if c.state.IsPlaying() {
+	switch (pback) {
+	case Playing:
 		name = "play"
-	} else {
+	case Paused:
 		name = "pause"
+	case Stopped:
+		name = "stop"
 	}
 
 	// XXX: This will set position to -1 on stop
-	pos := c.state.Index()
-
 	cmd := playlistfs.Control{Name: name, Arg: &pos}
 	reader := strings.NewReader(cmd.String() + "\n")
 
@@ -72,7 +73,7 @@ func (c *playctl) Write(off int64, p []byte) (int, error) {
 			inc = 1
 		}
 
-		idx := c.state.Index()
+		idx, _ := c.state.State()
 		if idx == -1 {
 			inc = 1 // Start from beginning
 		}
