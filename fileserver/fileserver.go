@@ -7,15 +7,16 @@ import (
 	"go.rbn.im/neinp/qid"
 	"go.rbn.im/neinp/stat"
 
-	"sync"
 	"context"
 	"errors"
 	"io"
+	"sync"
 )
 
 type File interface {
 	Read(int64, []byte) (int, error)
 	Write(int64, []byte) (int, error)
+	Close() error
 }
 
 type Cons func() (File, error)
@@ -166,7 +167,17 @@ func (s *FileServer) Write(ctx context.Context, msg message.TWrite) (message.RWr
 }
 
 func (s *FileServer) Clunk(ctx context.Context, msg message.TClunk) (message.RClunk, error) {
-	s.fids.Delete(msg.Fid)
-	s.open.Delete(msg.Fid)
+	defer s.fids.Delete(msg.Fid)
+	defer s.open.Delete(msg.Fid)
+
+	f, ok := s.open.Load(msg.Fid)
+	if ok {
+		file := f.(File)
+		err := file.Close()
+		if err != nil {
+			return message.RClunk{}, err
+		}
+	}
+
 	return message.RClunk{}, nil
 }

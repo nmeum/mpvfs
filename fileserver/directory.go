@@ -26,3 +26,7 @@ func (d directory) Read(off int64, p []byte) (int, error) {
 func (d directory) Write(off int64, p []byte) (int, error) {
 	return 0, os.ErrInvalid
 }
+
+func (d directory) Close() error {
+	return nil
+}

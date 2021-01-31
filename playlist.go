@@ -47,3 +47,7 @@ func (l *playlist) Write(off int64, p []byte) (int, error) {
 
 	return len(p), nil
 }
+
+func (l *playlist) Close() error {
+	return nil
+}

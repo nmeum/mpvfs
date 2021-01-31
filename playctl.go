@@ -136,3 +136,7 @@ func (c *playctl) Write(off int64, p []byte) (int, error) {
 
 	return len(p), nil
 }
+
+func (c *playctl) Close() error {
+	return nil
+}

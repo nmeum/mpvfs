@@ -46,3 +46,7 @@ func (c *playvol) Write(off int64, p []byte) (int, error) {
 
 	return len(p), nil
 }
+
+func (c *playvol) Close() error {
+	return nil
+}
