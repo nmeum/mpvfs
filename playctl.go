@@ -6,44 +6,40 @@ import (
 	"github.com/nmeum/mpvfs/playlistfs"
 
 	"errors"
-	"io"
 	"strings"
 )
 
 var ErrEmptyPlaylist = errors.New("playlist is empty")
 
 type playctl struct {
+	*playlistfs.BlockRecv
+
 	state *playerState
 	mpv   *mpv.Client
 }
 
 func newCtl() (fileserver.File, error) {
-	return &playctl{state, mpvClient}, nil
+	c := &playctl{state: state, mpv: mpvClient}
+	c.BlockRecv = playlistfs.NewBlockRecv(c)
+	return c, nil
 }
 
-func (c *playctl) Read(off int64, p []byte) (int, error) {
-	pos, pback := c.state.State()
-
-	var name string
-	switch (pback) {
-	case Playing:
-		name = "play"
-	case Paused:
-		name = "pause"
-	case Stopped:
-		name = "stop"
-	}
-
+func (c *playctl) StateReader(pos int, pback Playback) *strings.Reader {
 	// XXX: This will set position to -1 on stop
-	cmd := playlistfs.Control{Name: name, Arg: &pos}
-	reader := strings.NewReader(cmd.String() + "\n")
-
-	_, err := reader.Seek(off, io.SeekStart)
-	if err != nil {
-		return 0, io.EOF
+	cmd := playlistfs.Control{
+		Name: pback.String(),
+		Arg:  &pos,
 	}
 
-	return reader.Read(p)
+	return strings.NewReader(cmd.String() + "\n")
+}
+
+func (c *playctl) CurrentReader() *strings.Reader {
+	return c.StateReader(c.state.State())
+}
+
+func (c *playctl) NextReader() *strings.Reader {
+	return c.StateReader(c.state.WaitState())
 }
 
 func (c *playctl) Write(off int64, p []byte) (int, error) {
