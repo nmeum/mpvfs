@@ -30,19 +30,27 @@ Examples are given below. On Plan 9 derivatives, it is possible to
 partially control playback using the [games/jukebox][9front jukebox]
 client for playlistfs.
 
-### Linux
+### *nix
 
-Linux provides [v9fs][v9fs documentation], an in-tree implementation of
-the 9P protocol. If this implementation is enabled in your utilized
-Linux Kernel version, you can mount the file server as follows:
+Several 9P implementations are available for Unix-like operating
+systems.  Most notably, [plan9port][plan9port source] provides
+[9pfuse][9pfuse] a fuse-based implementation of 9P. Using 9pfuse, mount
+the file server as follows:
 
-	# mount -t9p -o port=9999,noextend 127.0.0.1 /media/9p/
+	$ 9pfuse 127.0.0.1:9999 /media/9p/
 
-Afterwards, you can interact with the `playctl`, `playvol`, and
-`playlist` files provided at the given mount point. For instance,
-`echo play >> /media/9p/playctl` will start playback. Refer to the
+Afterwards, interaction with the `playctl`, `playvol`, and `playlist`
+files provided at the given mount point is possible. For instance, `echo
+play >> /media/9p/playctl` will start playback. Please refer to the
 [playlistfs manual][9front playlistfs] for more information on the
 provided files.
+
+**Notes on v9fs:** The Linux kernel provides [v9fs][v9fs documentation],
+an in-tree implementation of the 9P protocol. Unfortunately, this
+implementation does not work correctly with playlistfs as it continues
+reading data from files after EOF has been received which doesn't work
+with playlistfs as it blocks until new data is available when the callee
+tries to continue reading after EOF.
 
 ### Plan 9
 
@@ -90,3 +98,5 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 [9front jukebox]: http://man.9front.org/7/juke
 [9front juke]: http://man.9front.org/7/juke
 [v9fs documentation]: https://www.kernel.org/doc/html/latest/filesystems/9p.html
+[plan9port source]: https://github.com/9fans/plan9port
+[9pfuse]: https://9fans.github.io/plan9port/man/man4/9pfuse.html
