@@ -7,6 +7,7 @@ import (
 
 	"errors"
 	"strings"
+	"sync/atomic"
 )
 
 var ErrEmptyPlaylist = errors.New("playlist is empty")
@@ -14,8 +15,9 @@ var ErrEmptyPlaylist = errors.New("playlist is empty")
 type playctl struct {
 	*playlistfs.BlockRecv
 
-	pos  chan int
-	play chan bool
+	pos      chan int
+	play     chan bool
+	stopRead int32
 
 	state *playerState
 	mpv   *mpv.Client
@@ -51,14 +53,13 @@ func (c *playctl) StateReader(pos int, playing bool) *strings.Reader {
 func (c *playctl) CurrentReader() *strings.Reader {
 	reader := c.StateReader(c.state.Index(), c.state.Playing())
 
-	// TODO: Stop these goroutines on clunk
 	go func(ch chan<- int) {
-		for {
+		for c.stopRead == 0 {
 			ch <- c.state.WaitIndex()
 		}
 	}(c.pos)
 	go func(ch chan<- bool) {
-		for {
+		for c.stopRead == 0 {
 			ch <- c.state.WaitPlaying()
 		}
 	}(c.play)
@@ -138,5 +139,6 @@ func (c *playctl) Write(off int64, p []byte) (int, error) {
 }
 
 func (c *playctl) Close() error {
+	atomic.StoreInt32(&c.stopRead, 1)
 	return nil
 }
