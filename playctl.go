@@ -54,12 +54,12 @@ func (c *playctl) CurrentReader() *strings.Reader {
 	reader := c.StateReader(c.state.Index(), c.state.Playing())
 
 	go func(ch chan<- int) {
-		for c.stopRead == 0 {
+		for atomic.LoadInt32(&c.stopRead) == 0 {
 			ch <- c.state.WaitIndex()
 		}
 	}(c.pos)
 	go func(ch chan<- bool) {
-		for c.stopRead == 0 {
+		for atomic.LoadInt32(&c.stopRead) == 0 {
 			ch <- c.state.WaitPlaying()
 		}
 	}(c.play)
