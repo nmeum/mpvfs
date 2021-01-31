@@ -7,27 +7,6 @@ import (
 	"sync"
 )
 
-type Playback int
-
-const (
-	Playing Playback = iota
-	Paused
-	Stopped
-)
-
-func (p Playback) String() string {
-	switch p {
-	case Playing:
-		return "play"
-	case Paused:
-		return "pause"
-	case Stopped:
-		return "stop"
-	}
-
-	panic("unreachable")
-}
-
 type playerState struct {
 	mpv *mpv.Client
 
@@ -38,8 +17,10 @@ type playerState struct {
 	playCond *sync.Cond
 
 	stateCond *sync.Cond
-	playback  Playback
-	pos       int
+	playing   bool
+
+	posCond *sync.Cond
+	pos     int
 
 	errChan chan error
 }
@@ -49,6 +30,7 @@ func newPlayerState(mpv *mpv.Client) (*playerState, error) {
 		pos:       -1,
 		mpv:       mpv,
 		volCond:   sync.NewCond(new(sync.Mutex)),
+		posCond:   sync.NewCond(new(sync.Mutex)),
 		playCond:  sync.NewCond(new(sync.Mutex)),
 		stateCond: sync.NewCond(new(sync.Mutex)),
 		errChan:   make(chan error, 1),
@@ -80,13 +62,7 @@ func (p *playerState) ErrChan() <-chan error {
 func (p *playerState) updateState(ch <-chan interface{}) {
 	for data := range ch {
 		p.stateCond.L.Lock()
-		paused := data.(bool)
-		if paused {
-			p.playback = Paused
-		} else {
-			p.playback = Playing
-		}
-
+		p.playing = !(data.(bool))
 		p.stateCond.Broadcast()
 		p.stateCond.L.Unlock()
 	}
@@ -105,15 +81,12 @@ func (p *playerState) updateVolume(ch <-chan interface{}) {
 
 func (p *playerState) updatePosition(ch <-chan interface{}) {
 	for data := range ch {
-		p.stateCond.L.Lock()
+		p.posCond.L.Lock()
 		pos := data.(float64)
-		if pos == -1 {
-			p.playback = Stopped
-		}
 		p.pos = int(pos)
 
-		p.stateCond.Broadcast()
-		p.stateCond.L.Unlock()
+		p.posCond.Broadcast()
+		p.posCond.L.Unlock()
 	}
 }
 
@@ -161,32 +134,48 @@ func (p *playerState) song(idx int) (string, error) {
 	return fmt.Sprintf("%s %s", name, title), nil
 }
 
-// State returns the current position in the playlist (or -1 if there is
-// no current entry) and the current playback state of the player.
-func (p *playerState) State() (int, Playback) {
+func (p *playerState) Playing() bool {
 	p.stateCond.L.Lock()
-	state := p.playback
-	pos := p.pos
+	r := p.playing
 	p.stateCond.L.Unlock()
 
-	return pos, state
+	return r
 }
 
-func (p *playerState) WaitState() (int, Playback) {
+func (p *playerState) WaitPlaying() bool {
 	p.stateCond.L.Lock()
-	oldState := p.playback
-	oldPos := p.pos
-
-	// TODO: What happens when `echo ${curState} ${curPos} >> playctl`?
-	for oldState == p.playback && oldPos == p.pos {
+	oldState := p.playing
+	for oldState == p.playing {
 		p.stateCond.Wait()
 	}
 
-	newState := p.playback
-	newPos := p.pos
+	newState := p.playing
 	p.stateCond.L.Unlock()
 
-	return newPos, newState
+	return newState
+}
+
+// Index returns the current position on the playlist, or
+// -1 if there is no current entry (e.g. playlist is empty).
+func (p *playerState) Index() int {
+	p.posCond.L.Lock()
+	r := p.pos
+	p.posCond.L.Unlock()
+
+	return r
+}
+
+func (p *playerState) WaitIndex() int {
+	p.posCond.L.Lock()
+	oldPos := p.pos
+	for oldPos == p.pos {
+		p.posCond.Wait()
+	}
+
+	newPos := p.pos
+	p.posCond.L.Unlock()
+
+	return newPos
 }
 
 func (p *playerState) Volume() uint {
