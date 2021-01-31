@@ -37,13 +37,17 @@ func (l *playlist) Write(off int64, p []byte) (int, error) {
 		return 0, err
 	}
 
-	_, err = l.mpv.ExecCmd("loadfile", entry.FileName, "append")
+	// TODO: There currently doesn't seem to be any way to retrieve
+	// this information for a playlist-entry, only for the currently
+	// loaded file.
+	opts := map[string]string{
+		"force-media-title": entry.Description,
+	}
+
+	_, err = l.mpv.ExecCmd("loadfile", entry.FileName, "append", opts)
 	if err != nil {
 		return 0, err
 	}
-
-	// TODO: Somehow make sure that mpv/mpvfs stores the description
-	// and returns it on read again.
 
 	return len(p), nil
 }
