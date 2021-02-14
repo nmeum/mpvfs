@@ -6,7 +6,11 @@
 
 Toy project for experimenting with [neinp][neinp source]. Currently
 provides a very buggy, incomplete, and unfinished implementation of
-[playlistfs][9front playlistfs].
+[playlistfs][9front playlistfs]. To work properly this presently
+requires a patch for both ninep and mpv:
+
+* https://github.com/mpv-player/mpv/pull/8548
+* https://gist.github.com/nmeum/689c859eab93912914f4ac9f152aa1bb
 
 ## Installation
 
