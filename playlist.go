@@ -41,7 +41,7 @@ func (l *playlist) Write(off int64, p []byte) (int, error) {
 	// this information for a playlist-entry, only for the currently
 	// loaded file.
 	opts := map[string]string{
-		"force-media-title": entry.Description,
+		"media-title": entry.Description,
 	}
 
 	_, err = l.mpv.ExecCmd("loadfile", entry.FileName, "append", opts)
