@@ -14,9 +14,9 @@ requires a patch for both ninep and mpv:
 
 ## Installation
 
-Install using `go get` as follows:
+Install using `go install` as follows:
 
-	$ go get github.com/nmeum/mpvfs
+	$ go install github.com/nmeum/mpvfs@latest
 
 ## Usage
 
