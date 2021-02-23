@@ -22,12 +22,12 @@ func newVol() (fileserver.File, error) {
 }
 
 func (c *playvol) CurrentReader() *strings.Reader {
-	v := playlistfs.Volume{[]uint{c.state.Volume()}}
+	v := playlistfs.Volume{Levels: []uint{c.state.Volume()}}
 	return strings.NewReader(v.String() + "\n")
 }
 
 func (c *playvol) NextReader() *strings.Reader {
-	v := playlistfs.Volume{[]uint{c.state.WaitVolume()}}
+	v := playlistfs.Volume{Levels: []uint{c.state.WaitVolume()}}
 	return strings.NewReader(v.String() + "\n")
 }
 
